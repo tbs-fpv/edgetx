@@ -65,7 +65,7 @@ static MixerSchedule mixerSchedules[NUM_MODULES];
 
 uint16_t getMixerSchedulerPeriod()
 {
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   if (mixerSchedules[INTERNAL_MODULE].period) {
     return mixerSchedules[INTERNAL_MODULE].period;
   }

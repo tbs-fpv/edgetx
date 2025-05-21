@@ -35,7 +35,9 @@
   #include "edgetx.h"
 #endif
 
-#if ROTARY_ENCODER_GRANULARITY == 2
+#if ROTARY_ENCODER_GRANULARITY == 1
+  #define ON_DETENT(p) (true)
+#elif ROTARY_ENCODER_GRANULARITY == 2
   #define ON_DETENT(p) ((p == 3) || (p == 0))
 #elif ROTARY_ENCODER_GRANULARITY == 4
   #define ON_DETENT(p) (p == 3)
@@ -61,6 +63,18 @@ rotenc_t rotaryEncoderGetValue()
 void rotaryEncoderCheck()
 {
   // Value increment for each state transition of the RE pins
+#if defined(MANUFACTURER_TBS)
+  static int8_t reInc[4][4] = {
+    // Prev = 0
+    {   0,  0,  1, -1 },
+    // Prev = 1
+    {   0,  0,  1,  0 },
+    // Prev = 2
+    {  -1,  1,  0,  0 },
+    // Prev = 3
+    {  -1,  0,  0,  0 },
+  };
+#else
 #if defined(ROTARY_ENCODER_INVERTED)
   static int8_t reInc[4][4] = {
     // Prev = 0
@@ -83,6 +97,7 @@ void rotaryEncoderCheck()
     // Prev = 3
     { -2, -1,  1,  0 },
   };
+#endif
 #endif
 
   uint8_t pins = ROTARY_ENCODER_POSITION();
@@ -181,12 +196,16 @@ void rotaryEncoderInit()
 #endif
 
   LL_SYSCFG_SetEXTISource(ROTARY_ENCODER_EXTI_PORT, ROTARY_ENCODER_EXTI_SYS_LINE1);
+#if defined(ROTARY_ENCODER_EXTI_SYS_LINE2)
   LL_SYSCFG_SetEXTISource(ROTARY_ENCODER_EXTI_PORT, ROTARY_ENCODER_EXTI_SYS_LINE2);
+#endif  // ROTARY_ENCODER_EXTI_SYS_LINE2
 
   uint32_t trigger = LL_EXTI_TRIGGER_RISING_FALLING;
   stm32_exti_enable(ROTARY_ENCODER_EXTI_LINE1, trigger, rotaryEncoderStartDelay);
+#if defined(ROTARY_ENCODER_EXTI_LINE2)
   stm32_exti_enable(ROTARY_ENCODER_EXTI_LINE2, trigger, rotaryEncoderStartDelay);
-    
+#endif // ROTARY_ENCODER_EXTI_LINE2
+
   NVIC_EnableIRQ(ROTARY_ENCODER_TIMER_IRQn);
   NVIC_SetPriority(ROTARY_ENCODER_TIMER_IRQn, 7);
 

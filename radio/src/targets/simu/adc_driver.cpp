@@ -47,7 +47,7 @@ static bool simu_start_conversion()
 
   if (i > 0) {
     // calculate default voltage on 1st call
-    uint32_t adc = (simu_get_analog(i) - 2048) * 1000 / 2000;
+    uint32_t adc = simu_get_analog(i) ? (simu_get_analog(i) - 2048) * 1000 / 2000 : 0;
     // TRACE("raw ana: %d adj ana: %d", simu_get_analog(i), vbat);
     // just in case the voltage has not been initialised in sim initialisation/startup
     // these formulae must mirror OpenTxSimulator::voltageToAdc

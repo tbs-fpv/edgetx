@@ -547,7 +547,12 @@ void menuRadioSetup(event_t event)
         break;
 
       case ITEM_RADIO_SETUP_BACKLIGHT_MODE:
+#if defined(RADIO_TANGO2)
+        // Tango screen is not readable without backlight
+        g_eeGeneral.backlightMode = editChoice(LCD_W-2, y, STR_MODE, STR_VBLMODE, g_eeGeneral.backlightMode, e_backlight_mode_keys, e_backlight_mode_on, attr|RIGHT, event, INDENT_WIDTH);
+#else
         g_eeGeneral.backlightMode = editChoice(LCD_W-2, y, STR_MODE, STR_VBLMODE, g_eeGeneral.backlightMode, e_backlight_mode_off, e_backlight_mode_on, attr|RIGHT, event, INDENT_WIDTH);
+#endif
         break;
 
       case ITEM_RADIO_SETUP_FLASH_BEEP:

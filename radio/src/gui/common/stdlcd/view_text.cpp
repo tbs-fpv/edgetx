@@ -111,7 +111,7 @@ void readModelNotes()
 #if defined(STORAGE_MODELSLIST)
     if (!isFileAvailable(reusableBuffer.viewText.filename)) {
       buf = strAppendFilename(
-          &reusableBuffer.viewText.filenam[sizeof(MODELS_PATH)],
+          &reusableBuffer.viewText.filename[sizeof(MODELS_PATH)],
           g_eeGeneral.currModelFilename, LEN_MODEL_FILENAME);
       strcpy(buf, TEXT_EXT);
     }

@@ -235,7 +235,8 @@ void storageReadAll()
   g_eeGeneral.modelCustomScriptsDisabled = true;
   
   if (loadRadioSettings() != nullptr) {
-    storageEraseAll(true);
+    extern uint8_t startOptions;
+    storageEraseAll(!(startOptions & OPENTX_START_NO_CHECKS));
   }
 #if !defined(STORAGE_MODELSLIST)
   else {

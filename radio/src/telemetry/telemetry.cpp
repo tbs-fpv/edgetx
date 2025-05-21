@@ -249,6 +249,15 @@ static void _poll_frame(void *pvParameter1, uint32_t ulParameter2)
   _telemetryIsPolling = false;
 }
 
+void telemetryFrameTrigger(uint8_t module, const etx_proto_driver_t* drv)
+{
+  if (!_poll_frame_queued[module] && xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+    _poll_frame_queued[module] = true;
+    if (xTimerPendFunctionCall(_poll_frame, (void*)drv, module, 0) == pdFALSE)
+      _poll_frame_queued[module]= false; // if we failed to queue, reset here
+  }
+}
+
 void telemetryFrameTrigger_ISR(uint8_t module, const etx_proto_driver_t* drv)
 {
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -389,7 +398,7 @@ void telemetryWakeup()
           }
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
           if (isModuleCrossfire(INTERNAL_MODULE)) {
             moduleState[INTERNAL_MODULE].counter = CRSF_FRAME_MODELID;
           }
@@ -505,7 +514,7 @@ void pushTelemetryDataToQueues(uint8_t* data, int length)
 }
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
 static ModuleSyncStatus moduleSyncStatus[NUM_MODULES];
 
 ModuleSyncStatus &getModuleSyncStatus(uint8_t moduleIdx)

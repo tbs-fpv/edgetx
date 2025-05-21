@@ -314,7 +314,8 @@ int OpenTxFirmware::getCapability(::Capability capability)
              IS_RADIOMASTER_MT12(board);
     case HasBluetooth:
       return (IS_FAMILY_HORUS_OR_T16(board) || IS_TARANIS_X7(board) || IS_TARANIS_XLITE(board)|| IS_TARANIS_X9E(board) ||
-              IS_TARANIS_X9DP_2019(board) || IS_FLYSKY_NV14(board) || IS_FLYSKY_EL18(board) || IS_FAMILY_PL18(board)) ? true : false;
+              IS_TARANIS_X9DP_2019(board) || IS_FLYSKY_NV14(board) || IS_FLYSKY_EL18(board) || IS_FAMILY_PL18(board) ||
+              IS_TBS_TANGO2(board) || IS_TBS_MAMBO(board)) ? true : false;
     case HasADCJitterFilter:
       return IS_HORUS_OR_TARANIS(board);
     case HasTelemetryBaudrate:
@@ -567,6 +568,18 @@ void registerOpenTxFirmwares()
   addOpenTxTaranisOptions(firmware);
   registerOpenTxFirmware(firmware);
   addOpenTxRfOptions(firmware, FLEX);
+
+  /* TBS TANGO2 board */
+  firmware = new OpenTxFirmware(FIRMWAREID("tango2"), Firmware::tr("TBS TANGO2"), BOARD_TBS_TANGO2);
+  addOpenTxTaranisOptions(firmware);
+  registerOpenTxFirmware(firmware);
+  addOpenTxRfOptions(firmware, EU + FLEX);
+
+  /* TBS MAMBO board */
+  firmware = new OpenTxFirmware(FIRMWAREID("mambo"), Firmware::tr("TBS MAMBO"), BOARD_TBS_MAMBO);
+  addOpenTxTaranisOptions(firmware);
+  registerOpenTxFirmware(firmware);
+  addOpenTxRfOptions(firmware, EU + FLEX);
 
   /* FrSky Taranis X-Lite board */
   firmware = new OpenTxFirmware(FIRMWAREID("xlite"), Firmware::tr("FrSky Taranis X-Lite"), BOARD_TARANIS_XLITE);

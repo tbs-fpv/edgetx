@@ -27,10 +27,23 @@
 
 void usbChargerInit()
 {
+#ifdef USB_CHARGER_INVERT_GPIO
+  gpio_init(USB_CHARGER_GPIO, GPIO_IN_PD, GPIO_PIN_SPEED_LOW);
+#else
+#if defined(RADIO_TANGO2)
+  gpio_init(USB_CHARGER_GPIO, GPIO_IN, GPIO_PIN_SPEED_LOW);
+#else
   gpio_init(USB_CHARGER_GPIO, GPIO_IN_PU, GPIO_PIN_SPEED_LOW);
+#endif
+#endif
 }
 
 bool usbChargerLed()
 {
-  return (!gpio_read(USB_CHARGER_GPIO) && usbPlugged());
+  return usbPlugged() &&
+#ifdef USB_CHARGER_INVERT_GPIO
+    gpio_read(USB_CHARGER_GPIO);
+#else
+    !gpio_read(USB_CHARGER_GPIO);
+#endif
 }

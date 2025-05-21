@@ -323,6 +323,53 @@ elseif(PCB STREQUAL X7)
     set(AUX2_SERIAL OFF)
     set(RGBLEDS YES)
     set(FUNCTION_SWITCHES_WITH_RGB YES)
+  elseif(PCBREV STREQUAL TANGO2 OR PCBREV STREQUAL MAMBO)
+    option(TBS_CROSSFIRE_TASK "Internal TX (as FreeRTOS task)" YES)
+    option(DISK_CACHE "Enable SD card disk cache" OFF)
+    set(DEFAULT_INTERNAL_MODULE CROSSFIRE CACHE STRING "Default internal module")
+    set(MODULE_SIZE_STD YES)
+    set(NAVIGATION_TYPE x7)
+    set(CPU_TYPE_FULL STM32F407xG)
+    set(ROTARY_ENCODER YES)
+    set(USB_CHARGER YES)
+    set(DEFAULT_MODE 2)
+    if (PCBREV STREQUAL TANGO2)
+      set(FLAVOUR tango2)
+      set(LCD_DEPTH 4)
+      set(STATUS_LEDS YES)
+      add_definitions(-DRADIO_TANGO2)
+      add_definitions(-DUSE_ROTARY_TRIMS)
+    else()
+      set(FLAVOUR mambo)
+      set(STATUS_LEDS NO)
+      add_definitions(-DRADIO_MAMBO)
+      add_definitions(-DPOTS_FILTER_NOISE)
+      add_definitions(-DCHARGING_ANIMATION)
+    endif()
+    set(SOFTWARE_INTERNAL_MODULE YES)
+    set(HSE_VALUE 8000000)
+    set(SDCARD YES)
+    set(EEPROM SDCARD)
+    set(TARGET_FLASH_OFFSET 0xC000)
+    set(TARGET_FLASH_SIZE 720K)
+    set(TARGET_CCM_OFFSET 0x400)
+    set(TARGET_CCM_SIZE 63K)
+    set(TARGET_BOOTLOADER_SIZE 0x00)
+    set(PPM_UNIT "PPM display unit" PERCENT_PREC0)
+    set(HAVE_NO_HARDWARE_TRAINER YES)
+    set(RADIO_CALIBRATION_HALL YES)
+    set(MODEL_HAVE_NO_BITMAP YES)
+    set(BOOTLOADER NO)
+    set(TBS_RELEASE "Used to build TBS released firmware" ON)
+    add_definitions(-DEEPROM_SDCARD -DEEPROM_VARIANT=0x8000)
+    add_definitions(-DPWR_BUTTON_${PWR_BUTTON})
+    add_definitions(-DSOFTWARE_VOLUME)
+    add_definitions(-DMANUFACTURER_TBS -DUSB_AGENT)
+    add_definitions(-DHAVE_NO_RTC_BATTERY)
+    add_definitions(-DLIBCRSF_ENABLE_OPENTX_RELATED -DLIBCRSF_ENABLE_SD -DLIBCRSF_ENABLE_COMMAND -DLIBCRSF_ENABLE_PARAMETER)
+    # Make malloc() thread-safe
+    add_definitions(-DTHREADSAFE_MALLOC)
+    add_definitions(-DMUTUALLY_EXCLUSIVE_MODULES)
   elseif(PCBREV STREQUAL ZORRO)
     set(DEFAULT_INTERNAL_MODULE CROSSFIRE CACHE STRING "Default internal module")
     set(INTERNAL_MODULE_SERIAL YES)
@@ -589,7 +636,8 @@ if(INTERNAL_MODULE_SERIAL)
   if(PXX_FREQUENCY STREQUAL HIGH)
     add_definitions(-DPXX_FREQUENCY_HIGH)
   endif()
-
+elseif(SOFTWARE_INTERNAL_MODULE)
+  set(INTERNAL_MODULES CRSF CACHE STRING "Internal modules")
 else()
 
   # defines existing internal modules
@@ -601,7 +649,7 @@ set(TARGET_SRC_DIR targets/${TARGET_DIR})
 
 set(BOARD_COMMON_SRC
   ${TARGET_SRC_DIR}/board.cpp
-  ${TARGET_SRC_DIR}/led_driver.cpp
+  #${TARGET_SRC_DIR}/led_driver.cpp
   ${TARGET_SRC_DIR}/haptic_driver.cpp
   ${TARGET_SRC_DIR}/backlight_driver.cpp
   ${TARGET_SRC_DIR}/${LCD_DRIVER}
@@ -625,6 +673,7 @@ if(BLUETOOTH)
   )
 endif()
 
+if(BOOTLOADER)
 # Bootloader board library
 add_library(board_bl OBJECT EXCLUDE_FROM_ALL
   ${BOARD_COMMON_SRC}
@@ -632,6 +681,7 @@ add_library(board_bl OBJECT EXCLUDE_FROM_ALL
 )
 # add_dependencies(board_bl ${BITMAPS_TARGET})
 set(BOOTLOADER_SRC ${BOOTLOADER_SRC} $<TARGET_OBJECTS:board_bl>)
+endif()
 
 # Firmware board library
 add_library(board OBJECT EXCLUDE_FROM_ALL
@@ -684,6 +734,27 @@ if(RGBLEDS)
   add_definitions(-DRGBLEDS)
 endif()
 
+if(DISK_CACHE)
+  set(SRC ${SRC} disk_cache.cpp)
+  add_definitions(-DDISK_CACHE)
+endif()
+
+if(HAVE_NO_HARDWARE_TRAINER)
+  add_definitions(-DRADIO_HAVE_NO_HARDWARE_TRAINER)
+endif()
+
+if(MODEL_HAVE_NO_BITMAP)
+  add_definitions(-DMODEL_HAVE_NO_BITMAP)
+endif()
+
+if(RADIO_CALIBRATION_HALL)
+  add_definitions(-DRADIO_CALIBRATION_HALL)
+endif()
+
+if(TBS_CROSSFIRE_TASK)
+  add_definitions(-DTBS_CROSSFIRE_TASK)
+endif()
+
 if(FLAVOUR STREQUAL gx12)
   target_sources(board PRIVATE
     drivers/pca95xx.cpp
@@ -696,6 +767,28 @@ if(FLAVOUR STREQUAL xlites)
   target_sources(board PRIVATE
     ${TARGET_SRC_DIR}/shared_dsc_headphone.cpp
   )
+endif()
+
+if(TBS_CROSSFIRE_TASK AND (FLAVOUR STREQUAL mambo OR FLAVOUR STREQUAL tango2))
+  target_sources(board PRIVATE
+    ${TARGET_SRC_DIR}/tbs/crsf/crc8.cpp
+    ${TARGET_SRC_DIR}/tbs/crsf/crossfire.cpp
+    ${TARGET_SRC_DIR}/tbs/crsf/crsf_utilities.cpp
+    ${TARGET_SRC_DIR}/tbs/crsf/crsf_write.cpp
+    ${TARGET_SRC_DIR}/tbs/crsf/crsf.cpp
+    ${TARGET_SRC_DIR}/tbs/soft_internal_module_driver.cpp
+    ${TARGET_SRC_DIR}/tbs/usb_agent_driver.cpp
+    ${TARGET_SRC_DIR}/tbs/usb_hid_agent.c
+  )
+  target_include_directories(board PRIVATE ${TARGET_SRC_DIR}/tbs)
+  #TODO delete those lines
+  set(STM32USB_DIR ${THIRDPARTY_DIR}/STM32_USB_Device_Library)
+  include_directories(${STM32USB_DIR}/Core/Inc)
+  include_directories(${STM32USB_DIR}/Class/CDC/Inc)
+  include_directories(${STM32USB_DIR}/Class/HID/Inc)
+  include_directories(${STM32USB_DIR}/Class/MSC/Inc)
+  set(STM32_DRIVER_DIR targets/common/arm/stm32)
+  include_directories(${STM32_DRIVER_DIR})
 endif()
 
 set(SRC ${SRC}
@@ -721,9 +814,11 @@ if(PCB STREQUAL XLITE OR PCB STREQUAL XLITES OR PCBREV STREQUAL COMMANDO8)
     targets/common/arm/stm32/sticks_pwm_driver.cpp)
 endif()
 
+if(BOOTLOADER)
 set(FIRMWARE_SRC
   ${FIRMWARE_SRC}
   bootloader/loadboot.cpp
   )
+endif()
 
 set(RADIO_DEPENDENCIES ${RADIO_DEPENDENCIES} ${BITMAPS_TARGET})

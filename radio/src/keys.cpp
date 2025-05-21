@@ -52,6 +52,12 @@
   #define FILTERBITS 4
 #endif
 
+#if defined(USE_ROTARY_TRIMS)
+  // when make the rotary as the key, reduce the hold time
+  #define ROTARY_FILTERBITS         1
+  #define ROTARY_FILTER_MASK        ((1 << ROTARY_FILTERBITS) - 1)
+#endif
+
 #define FILTER_MASK ((1 << FILTERBITS) - 1)
 
 #define KSTATE_OFF                  0
@@ -116,10 +122,17 @@ event_t Key::input(bool val)
 
   switch (m_state) {
     case KSTATE_OFF:
+#if defined(USE_ROTARY_TRIMS) && !defined(BOOT)
+      if (m_vals == (getRotaryTrimMode() != EDIT_TRIM_DISABLED ? ROTARY_FILTER_MASK : FILTER_MASK)) {
+        m_state = KSTATE_START;
+        m_cnt = 0;
+      }
+#else
       if (m_vals == FILTER_MASK) {
         m_state = KSTATE_START;
         m_cnt = 0;
       }
+#endif
       break;
 
     case KSTATE_START:
@@ -130,6 +143,34 @@ event_t Key::input(bool val)
       break;
 
     case KSTATE_RPTDELAY: // gruvin: delay state before first key repeat
+#if defined(USE_ROTARY_TRIMS)
+      if (getRotaryTrimMode() != EDIT_TRIM_DISABLED) {
+  #if defined(SIMU)
+        if (m_cnt == KEY_LONG_DELAY) {
+          m_state = 16;
+          m_cnt = 0;
+        }
+        break;
+  #else
+        if (m_cnt == 6) {
+          m_state = 2;
+          m_cnt = 0;
+        }
+        break;
+  #endif
+      }
+      else {
+        if (m_cnt == KEY_LONG_DELAY) {
+          // generate long key press
+          evt = _MSK_KEY_LONG;
+        }
+        if (m_cnt == KEY_REPEAT_DELAY) {
+          m_state = 16;
+          m_cnt = 0;
+        }
+        break;
+      }
+#else
       if (m_cnt == KEY_LONG_DELAY) {
         // generate long key press
         evt = _MSK_KEY_LONG;
@@ -140,7 +181,7 @@ event_t Key::input(bool val)
         m_cnt = 0;
       }
       break;
-
+#endif
     case 16:
     case 8:
     case 4:
@@ -322,6 +363,17 @@ uint8_t keysGetTrimState(uint8_t trim)
   if (trim >= keysGetMaxTrims() * 2) return 0;
   return trim_keys[trim].pressed();
 }
+
+#if defined(USE_ROTARY_TRIMS)
+static uint8_t RotaryTrimstate = 0;
+static uint8_t RotaryTrimMode = EDIT_TRIM_DISABLED;
+
+void setRotaryTrimState(uint8_t trimState) { RotaryTrimstate = trimState; }
+uint8_t getRotaryTrimState() { return RotaryTrimstate; }
+
+void setRotaryTrimMode(uint8_t trimMode) { RotaryTrimMode = trimMode; }
+uint8_t getRotaryTrimMode() { return RotaryTrimMode; }
+#endif
 
 #if defined(USE_HATS_AS_KEYS)
 #define ROTARY_EMU_KEY_REPEAT_RATE 12  // times 10 [ms]
@@ -527,7 +579,19 @@ bool rotaryEncoderPollingCycle()
     if ((g_tmr10ms - lastEvent >= 10) || (cw == new_cw)) {  // 100ms
 
       pushEvent(new_cw ? EVT_ROTARY_RIGHT : EVT_ROTARY_LEFT);
+#if defined(USE_ROTARY_TRIMS)
+        uint8_t curTrimMode = getRotaryTrimMode();
 
+        if (curTrimMode != EDIT_TRIM_DISABLED) {
+          uint8_t key = (curTrimMode - 1) * 2;
+
+          if (new_cw) {
+            setRotaryTrimState(0x01 << key);
+          } else {
+            setRotaryTrimState(0x01 << (key + 1));
+          }
+        }
+#endif
       // rotary encoder navigation speed (acceleration) detection/calculation
       static uint32_t delay = 2 * ROTENC_DELAY_MIDSPEED;
 

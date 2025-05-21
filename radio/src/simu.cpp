@@ -446,10 +446,26 @@ void OpenTxSim::updateKeysAndSwitches(bool start)
   } \
   simuSetSwitch(swtch, state_##swtch) \
 
+#if defined(RADIO_TANGO2)
+  SWITCH_KEY(A, 0, 2);
+  SWITCH_KEY(B, 1, 3);
+  SWITCH_KEY(C, 2, 3);
+  SWITCH_KEY(D, 3, 2);
+  SWITCH_KEY(E, 4, 2);
+  SWITCH_KEY(F, 5, 2);
+#elif defined(RADIO_MAMBO)
   SWITCH_KEY(A, 0, 3);
   SWITCH_KEY(B, 1, 3);
   SWITCH_KEY(C, 2, 3);
   SWITCH_KEY(D, 3, 3);
+  SWITCH_KEY(E, 4, 2);
+  SWITCH_KEY(F, 5, 2);
+#else
+  SWITCH_KEY(A, 0, 3);
+  SWITCH_KEY(B, 1, 3);
+  SWITCH_KEY(C, 2, 3);
+  SWITCH_KEY(D, 3, 3);
+#endif
 
   #if defined(RADIO_TPRO) || defined(RADIO_TPROV2) || defined(RADIO_TPROS) || defined(RADIO_BUMBLEBEE)
     SWITCH_KEY(1, 4, 2);
@@ -588,7 +604,20 @@ void OpenTxSim::refreshDisplay()
                 (((z & 0x001F) << 3) & 0x00F8) + ((z & 0x001C) >> 2));
         setPixel(x, y, color);
 #else
-#if LCD_DEPTH == 4
+#if defined(RADIO_TANGO2)
+        coord_t xx = LCD_W - x - 1;
+        coord_t yy = LCD_H - y - 1;
+        pixel_t * p = &simuLcdBuf[yy * (LCD_W / 2) + (xx / 2)];
+        uint8_t z = (xx & 1) ? (*p & 0x0F) : (*p >> 4);
+        if (z) {
+          FXColor color;
+          if (isBacklightEnabled())
+            color = FXRGB(47-(z*47)/15, 123-(z*123)/15, 227-(z*227)/15);
+          else
+            color = FXRGB(200-(z*200)/15, 200-(z*200)/15, 200-(z*200)/15);
+          setPixel(x, y, color);
+        } 
+#elif LCD_DEPTH == 4
         pixel_t *p = &simuLcdBuf[y / 2 * LCD_W + x];
         uint8_t z = (y & 1) ? (*p >> 4) : (*p & 0x0F);
         if (z) {

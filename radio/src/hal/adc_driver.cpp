@@ -26,6 +26,7 @@
 #endif
 
 #include "edgetx.h"
+#include "mixer_scheduler.h"
 
 const etx_hal_adc_driver_t* _hal_adc_driver = nullptr;
 const etx_hal_adc_inputs_t* _hal_adc_inputs = nullptr;
@@ -480,6 +481,11 @@ void getADC()
 
   DEBUG_TIMER_START(debugTimerAdcRead);
   if (!adcRead()) TRACE("adcRead failed");
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+  #include "mixer_scheduler.h"
+  if (isCrossfireStarted() && crossfireSharedData->trampoline.read_sticks)
+    crossfireSharedData->trampoline.read_sticks(getMixerSchedulerPeriod(), adcValues);
+#endif
   DEBUG_TIMER_STOP(debugTimerAdcRead);
 
   for (uint8_t x = 0; x < max_analogs; x++) {

@@ -211,7 +211,7 @@ static void sdio_low_level_init(void)
 #endif
 
   // SDIO Interrupt ENABLE
-  NVIC_SetPriority(SD_SDIO_IRQn, 0);
+  NVIC_SetPriority(SD_SDIO_IRQn, 6);
   NVIC_EnableIRQ(SD_SDIO_IRQn);
 
 #if defined(SD_SDIO_DMA)
@@ -236,7 +236,7 @@ static void sdio_low_level_init(void)
   __HAL_LINKDMA(&sdio, hdmarx, sdioTxDma);
   
   // DMA2 STREAMx Interrupt ENABLE
-  NVIC_SetPriority(SD_SDIO_DMA_IRQn, 0);
+  NVIC_SetPriority(SD_SDIO_DMA_IRQn, 6);
   NVIC_EnableIRQ(SD_SDIO_DMA_IRQn);
 #endif
 }

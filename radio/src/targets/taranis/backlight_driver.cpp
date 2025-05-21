@@ -129,10 +129,29 @@ void backlightInit()
   BACKLIGHT_TIMER->CR1 = TIM_CR1_CEN; // Counter enable
 }
 
+#if defined(RADIO_TANGO2)
+void backlightEnable(uint8_t level)
+{
+  // the scale is divided into two groups since the affect of contrast configuration is not so linear
+  // system brightness 0  to 84  map to screen contrast 0   to 127
+  // system brightness 84 to 100 map to screen contrast 127 to 255
+
+  uint8_t value = 100-level;
+
+  if (value >= 84)
+    value = ((value-84) << 3) + 127; // (value-84)*128/16+127;
+  else
+    value = (value << 5) / 21; // value*128/84
+
+  lcdAdjustContrast(value);
+  lcdOn();
+}
+#else
 void backlightEnable(uint8_t level)
 {
   BACKLIGHT_COUNTER_REGISTER = 100 - level;
 }
+#endif
 
 void backlightFullOn()
 {

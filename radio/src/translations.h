@@ -470,6 +470,22 @@ extern const char STR_VTRIM[];
 extern const char STR_MENUTOSTART[];
 extern const char STR_SETMIDPOINT[];
 extern const char STR_MOVESTICKSPOTS[];
+#if defined(MANUFACTURER_TBS)
+extern const char STR_MOVESTICK_P0[];
+extern const char STR_MOVESTICK_P1[];
+extern const char STR_MOVESTICK_P2[];
+extern const char STR_MOVESTICK_P3[];
+extern const char STR_MOVESTICK_P4[];
+extern const char STR_MOVESTICK_P5[];
+extern const char STR_MOVESTICK_P6[];
+extern const char STR_MOVESTICK_P7[];
+extern const char STR_MOVESTICK_P8[];
+extern const char STR_CAL_POINTS[];
+extern const char STR_RELEASE_STICK[];
+extern const char STR_MOVE_PLUS[];
+extern const char STR_CENTER_STICK[];
+extern const char STR_UPDATE_CROSSFIRE[];
+#endif
 extern const char STR_TX[];
 #define STR_RX (STR_TX+OFS_RX)
 extern const char STR_NODATA[];
@@ -673,6 +689,7 @@ extern const char STR_ABOUT_US[];
 extern const char STR_USB_JOYSTICK[];
 extern const char STR_USB_MASS_STORAGE[];
 extern const char STR_USB_SERIAL[];
+extern const char STR_USB_AGENT[];
 extern const char STR_SETUP_SCREENS[];
 extern const char STR_MONITOR_SCREENS[];
 extern const char STR_RESET_BTN[];

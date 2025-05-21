@@ -203,7 +203,8 @@ void SimulatedUIWidget::setLcd(LcdWidget * lcd)
   auto width = Boards::getCapability(m_board, Board::LcdWidth);
   auto height = Boards::getCapability(m_board, Board::LcdHeight);
   auto depth = Boards::getCapability(m_board, Board::LcdDepth);
-  m_lcd->setData(width, height, depth);
+  auto invert = Boards::getCapability(m_board, Board::LcdRevert);
+  m_lcd->setData(width, height, depth, invert);
 
   if (!m_backlightColors.size())
     return;

@@ -322,7 +322,7 @@ int Boards::getCapability(Board::Type board, Board::Capability capability)
         return 8;
       else if (IS_JUMPER_TPROV2(board))
         return 6;
-      else if (IS_JUMPER_TLITE(board) || IS_JUMPER_TPROV1(board) || IS_BETAFPV_LR3PRO(board) || IS_IFLIGHT_COMMANDO8(board) || IS_JUMPER_BUMBLEBEE(board))
+      else if (IS_JUMPER_TLITE(board) || IS_JUMPER_TPROV1(board) || IS_BETAFPV_LR3PRO(board) || IS_IFLIGHT_COMMANDO8(board) || IS_JUMPER_BUMBLEBEE(board) || IS_TBS_TANGO2(board))
         return 4;
       else if(IS_RADIOMASTER_ZORRO(board))
         return 8;
@@ -380,6 +380,8 @@ int Boards::getCapability(Board::Type board, Board::Capability capability)
     case LcdDepth:
       if (IS_FAMILY_HORUS_OR_T16(board))
         return 16;
+      else if (IS_TBS_TANGO2(board))
+        return 4;
       else if (IS_TARANIS_SMALL(board))
         return 1;
       else if (IS_TARANIS(board))
@@ -396,6 +398,8 @@ int Boards::getCapability(Board::Type board, Board::Capability capability)
         return 240;
       else if (IS_FAMILY_HORUS_OR_T16(board))
         return 272;
+      else if (IS_TBS_TANGO2(board))
+        return 96;
       else
         return 64;
 
@@ -412,6 +416,12 @@ int Boards::getCapability(Board::Type board, Board::Capability capability)
         return 212;
       else
         return 128;
+
+    case LcdRevert:
+      if (IS_TBS_TANGO2(board))
+        return true;
+      else
+        return false;
 
     case MaxAnalogs:
       return getCapability(board, Board::Sticks) + getCapability(board, Board::Pots) + getCapability(board, Board::Sliders) +
@@ -508,7 +518,7 @@ StringTagMappingTable Boards::getLegacyAnalogsLookupTable(Board::Type board)
     tbl.insert(tbl.end(), {
                               {tr("P1").toStdString(), "P1"},
                           });
-  } else if ((IS_TARANIS_SMALL(board) && !IS_JUMPER_TLITE(board) && !IS_JUMPER_T20(board)) || IS_FLYSKY_NV14(board) || IS_FLYSKY_EL18(board)) {
+  } else if ((IS_TARANIS_SMALL(board) && !IS_TBS_TANGO2(board) && !IS_JUMPER_TLITE(board) && !IS_JUMPER_T20(board)) || IS_FLYSKY_NV14(board) || IS_FLYSKY_EL18(board)) {
     tbl.insert(tbl.end(), {
                               {tr("P1").toStdString(), "POT1"},
                               {tr("P2").toStdString(), "POT2"},
@@ -594,6 +604,10 @@ QString Boards::getBoardName(Board::Type board)
       return "Taranis X7/X7S";
     case BOARD_TARANIS_X7_ACCESS:
       return "Taranis X7/X7S Access";
+    case BOARD_TBS_TANGO2:
+      return "TBS TANGO2";
+    case BOARD_TBS_MAMBO:
+      return "TBS MAMBO";
     case BOARD_TARANIS_XLITE:
       return "Taranis X-Lite";
     case BOARD_TARANIS_XLITES:
@@ -744,7 +758,9 @@ QList<int> Boards::getSupportedInternalModules(Board::Type board)
         (int)MODULE_TYPE_FLYSKY_AFHDS3,
         (int)MODULE_TYPE_CROSSFIRE,
     });
-  } else if (IS_RADIOMASTER_MT12(board)) {
+  }else if (IS_TBS_TANGO2(board) || IS_TBS_MAMBO(board)) {
+    modules.append((int)MODULE_TYPE_CROSSFIRE);
+  }else if (IS_RADIOMASTER_MT12(board)) {
     modules.append({
         (int)MODULE_TYPE_CROSSFIRE,
         (int)MODULE_TYPE_MULTIMODULE,

@@ -230,6 +230,10 @@ void GeneralSettings::init()
     strcpy(bluetoothName, "st16");
   else if (IS_FAMILY_HORUS_OR_T16(board))
     strcpy(bluetoothName, "horus");
+  else if (IS_TBS_TANGO2(board))
+    strcpy(bluetoothName, "tango2");
+  else if (IS_TBS_MAMBO(board))
+    strcpy(bluetoothName, "mambo");
   else if (IS_TARANIS_X9E(board) || IS_TARANIS_SMALL(board))
     strcpy(bluetoothName, "taranis");
 

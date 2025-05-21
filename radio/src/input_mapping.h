@@ -23,7 +23,6 @@
 
 #include <stdint.h>
 
-
 #define MAX_INPUT_MODES 4
 
 // Is mapping of main controls used? (aka. "Modes")

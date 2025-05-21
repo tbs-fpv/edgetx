@@ -50,14 +50,52 @@ static inline void _init_trims()
 {% endfor %}
 }
 
+{% set trims_type = trims | selectattr('type', 'defined') | first %}
+
+{% if trims_type.type == 'ROTARY' %}
+#include "keys.h"
+{% endif %}
+
 static inline uint32_t _read_trims()
 {
   uint32_t trims = 0;
+
+{% if trims_type.type == 'GPIO' %}
 {% for trim in hw_trims %}
   if ({{'!' if trim.dec.active_low }}LL_GPIO_IsInputPinSet({{ trim.dec.gpio }}, {{ trim.dec.pin }}))
     trims |= (1 << {{ loop.index0 * 2 }});
   if ({{'!' if trim.inc.active_low }}LL_GPIO_IsInputPinSet({{ trim.inc.gpio }}, {{ trim.inc.pin }}))
     trims |= (1 << {{ loop.index0 * 2 + 1 }});
 {% endfor %}
+
+{% elif trims_type.type == 'ADC' %}
+  #define IS_TRIM_PRESSED_STATE(n, value, boundary)  (boundary[n] > value && value > boundary[n + 1])
+
+  const uint16_t trimAdcValue[] = {4095 / 2, 4095 / 3, 4095 / 4, 4095 / 5, 4095 / 6, 4095 / 7, 4095 / 8, 4095 / 9};
+  const int trimAdcBoundary[] = {(4095 + trimAdcValue[0]) >> 1,           (trimAdcValue[0] + trimAdcValue[1]) >> 1,
+                                (trimAdcValue[1] + trimAdcValue[2]) >> 1, (trimAdcValue[2] + trimAdcValue[3]) >> 1,
+                                (trimAdcValue[3] + trimAdcValue[4]) >> 1, (trimAdcValue[4] + trimAdcValue[5]) >> 1,
+                                (trimAdcValue[5] + trimAdcValue[6]) >> 1, (trimAdcValue[6] + trimAdcValue[7]) >> 1,
+                                (trimAdcValue[7] + 0) >> 1};
+
+  uint16_t trimValue = getAnalogValue({{ adc_index["TRIMS"] }});
+
+  for (uint8_t i = 0; i < 8; i++) {
+    if (IS_TRIM_PRESSED_STATE(i, trimValue, trimAdcBoundary)) {
+      if (i == 4)
+        trims |= 1 << 5;
+      else if (i == 5)
+        trims |= 1 << 4;
+      else
+        trims |= 1 << i;
+      break;
+    }
+  }
+
+{% elif trims_type.type == 'ROTARY' %}
+  // the trim state from the events of per10ms()
+  trims = getRotaryTrimState();
+  setRotaryTrimState(0);
+{% endif %}
   return trims;
 }

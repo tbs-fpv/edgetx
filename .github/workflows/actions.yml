@@ -29,6 +29,8 @@ jobs:
         target:
           - x9dp2019
           - tx16s
+          - mambo
+          - tango2
           - nv14
           - el18
           - pl18
@@ -84,6 +86,7 @@ jobs:
     strategy:
       matrix:
         target:
+          - mambo;tango2
           - nv14;el18
           - pl18;pl18ev;pl18u
           - pa01

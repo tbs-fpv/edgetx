@@ -216,7 +216,11 @@ static void* multiInit(uint8_t module)
   if (module == EXTERNAL_MODULE) {
     // serial port setup
     cfg.direction = ETX_Dir_TX;
+#if defined (RADIO_TANGO2)
+    cfg.polarity = ETX_Pol_Normal;
+#else
     cfg.polarity = ETX_Pol_Inverted;
+#endif
 
     mod_st = modulePortInitSerial(module, ETX_MOD_PORT_UART, &cfg, true);
     if (!mod_st) return nullptr;

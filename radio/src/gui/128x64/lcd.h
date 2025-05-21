@@ -38,7 +38,11 @@
 #define LCD_LINES                      (LCD_H/FH)
 #define LCD_COLS                       (LCD_W/FW)
 
-#define BITMAP_BUFFER_SIZE(w, h)       (2 + (w) * (((h)+7)/8))
+#define COLOUR_MASK(x)                 ((x) & 0x0F0000)
+
+#if LCD_DEPTH == 4
+#define FILL_WHITE                     0x10
+#endif
 
 /* lcdDrawText flags */
 #define BLINK                          0x01
@@ -83,7 +87,13 @@
 #define TIMEHOUR                     0x2000
 #define STREXPANDED                  0x4000
 
-#define DISPLAY_BUFFER_SIZE            (LCD_W*((LCD_H+7)/8))
+#if LCD_DEPTH == 4
+  #define DISPLAY_BUFFER_SIZE            (LCD_W*LCD_H*4/8)
+  #define BITMAP_BUFFER_SIZE(w, h)       (2 + (w) * (((h)+7)/8)*4)
+#else
+  #define DISPLAY_BUFFER_SIZE            (LCD_W*((LCD_H+7)/8))
+  #define BITMAP_BUFFER_SIZE(w, h)       (2 + (w) * (((h)+7)/8))
+#endif
 
 extern pixel_t displayBuf[DISPLAY_BUFFER_SIZE];
 extern coord_t lcdLastRightPos;
@@ -167,6 +177,11 @@ inline void lcdDrawBitmap(coord_t x, coord_t y, const uint8_t * bitmap)
   lcdDraw1bitBitmap(x, y, bitmap, 0);
 }
 
+#if defined(CHARGING_ANIMATION)
+void drawChargingState(void);
+void drawFullyCharged(void);
+#endif  // CHARGING_ANIMATION
+
 uint8_t * lcdLoadBitmap(uint8_t * dest, const char * filename, uint8_t width, uint8_t height);
 
 #if defined(BOOT)
@@ -183,9 +198,14 @@ inline pixel_t getPixel(uint8_t x, uint8_t y)
     return 0;
   }
 
+#if LCD_DEPTH == 4
+  pixel_t * p = &displayBuf[(y * LCD_W >> 1) + (x >> 1)];
+  return (x & 1) ? (*p >> 4) : (*p & 0x0F);
+#else
   pixel_t pixel = displayBuf[(y / 8) * LCD_W + x];
   pixel_t mask = 1 << (y & 7);
   return ((pixel & mask) ? 0xf : 0);
+#endif  // LCD_DEPTH
 }
 
 uint8_t getTextWidth(const char * s, uint8_t len=0, LcdFlags flags=0);

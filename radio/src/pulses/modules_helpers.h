@@ -683,7 +683,7 @@ inline bool isBindCh9To16Allowed(uint8_t moduleIndex)
 
 inline bool isTelemAllowedOnBind(uint8_t moduleIndex)
 {
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   if (moduleIndex == INTERNAL_MODULE)
     return true;
 

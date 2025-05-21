@@ -115,7 +115,7 @@ enum MenuModelSetupItems {
   ITEM_MODEL_SETUP_REGISTRATION_ID,
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   ITEM_MODEL_SETUP_INTERNAL_MODULE_LABEL,
 #if defined(CROSSFIRE) || defined(GHOST)
   ITEM_MODEL_SETUP_INTERNAL_MODULE_TYPE,
@@ -297,10 +297,10 @@ static uint8_t VIEWOPT_ROW(uint8_t value) { return expandState.viewOpt ? value :
 #define REGISTRATION_ID_ROWS
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE) && defined(HARDWARE_EXTERNAL_MODULE)
+#if (defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)) && defined(HARDWARE_EXTERNAL_MODULE)
   #define CURRENT_MODULE_EDITED(k)        (k >= ITEM_MODEL_SETUP_EXTERNAL_MODULE_LABEL ? EXTERNAL_MODULE : INTERNAL_MODULE)
   #define CURRENT_RECEIVER_EDITED(k)      (k - (k >= ITEM_MODEL_SETUP_EXTERNAL_MODULE_LABEL ? ITEM_MODEL_SETUP_EXTERNAL_MODULE_PXX2_RECEIVER_1 : ITEM_MODEL_SETUP_INTERNAL_MODULE_PXX2_RECEIVER_1))
-#elif defined(HARDWARE_INTERNAL_MODULE)
+#elif defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   #define CURRENT_MODULE_EDITED(k)        (INTERNAL_MODULE)
   #define CURRENT_RECEIVER_EDITED(k)      (k - ITEM_MODEL_SETUP_INTERNAL_MODULE_PXX2_RECEIVER_1)
 #else
@@ -454,7 +454,7 @@ void editTimerCountdown(int timerIdx, coord_t y, LcdFlags attr, event_t event)
   }
   if (attr && s_editMode > 0) {
     switch (menuHorizontalPosition) {
-      case 0: 
+      case 0:
       {
         value = timer.countdownBeep;
         if (timer.extraHaptic) value += (COUNTDOWN_NON_HAPTIC_LAST + 1);
@@ -484,7 +484,7 @@ void editTimerCountdown(int timerIdx, coord_t y, LcdFlags attr, event_t event)
 #include "common/stdlcd/model_setup_afhds3.cpp"
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   #define INTERNAL_MODULE_ROWS \
     LABEL(InternalModule), \
     MODULE_TYPE_ROWS(INTERNAL_MODULE),         /* ITEM_MODEL_SETUP_INTERNAL_MODULE_TYPE */ \
@@ -666,7 +666,7 @@ void menuModelCFSOne(event_t event)
       3,
 #endif
     });
-  
+
   int8_t sub = menuVerticalPosition;
   int8_t editMode = s_editMode;
 
@@ -865,8 +865,10 @@ void menuModelSetup(event_t event)
         editSingleName(MODEL_SETUP_2ND_COLUMN, y, STR_MODELNAME,
                        g_model.header.name, sizeof(g_model.header.name), event,
                        attr, old_editMode);
+#if !defined(STORAGE_MODELSLIST)
         memcpy(modelHeaders[g_eeGeneral.currModel].name, g_model.header.name,
                sizeof(g_model.header.name));
+#endif
         break;
 
       case ITEM_MODEL_SETUP_TIMER1:
@@ -1143,7 +1145,7 @@ void menuModelSetup(event_t event)
       case ITEM_MODEL_SETUP_CHECKLIST_DISPLAY:
         g_model.displayChecklist = editCheckBox(g_model.displayChecklist, MODEL_SETUP_2ND_COLUMN, y, STR_CHECKLIST, attr, event, INDENT_WIDTH);
         break;
-      
+
       case ITEM_MODEL_SETUP_CHECKLIST_INTERACTIVE:
         g_model.checklistInteractive = editCheckBox(g_model.checklistInteractive, MODEL_SETUP_2ND_COLUMN, y, STR_CHECKLIST_INTERACTIVE, attr, event, INDENT_WIDTH);
         break;
@@ -1340,7 +1342,7 @@ void menuModelSetup(event_t event)
         break;
 
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_LABEL:
         lcdDrawTextAlignedLeft(y, STR_INTERNALRF);
         break;
@@ -1353,7 +1355,7 @@ void menuModelSetup(event_t event)
         break;
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_TYPE:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -1423,7 +1425,7 @@ void menuModelSetup(event_t event)
           if (s_editMode > 0) {
             switch (menuHorizontalPosition) {
               case 0:
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
                 if (moduleIdx == INTERNAL_MODULE) {
                   uint8_t moduleType =
                       checkIncDec(event, g_model.moduleData[moduleIdx].type,
@@ -1548,7 +1550,7 @@ void menuModelSetup(event_t event)
       }
 #endif
 #if (defined(CROSSFIRE) || defined(GHOST))
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_SERIALSTATUS:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -1566,9 +1568,9 @@ void menuModelSetup(event_t event)
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
       case ITEM_MODEL_SETUP_EXTERNAL_MODULE_ARMING_MODE:
-#endif 
-        g_model.moduleData[moduleIdx].crsf.crsfArmingMode = 
-          editChoice(MODEL_SETUP_2ND_COLUMN, y, STR_CRSF_ARMING_MODE, STR_CRSF_ARMING_MODES, 
+#endif
+        g_model.moduleData[moduleIdx].crsf.crsfArmingMode =
+          editChoice(MODEL_SETUP_2ND_COLUMN, y, STR_CRSF_ARMING_MODE, STR_CRSF_ARMING_MODES,
           g_model.moduleData[moduleIdx].crsf.crsfArmingMode, ARMING_MODE_FIRST, ARMING_MODE_LAST, attr, event, INDENT_WIDTH);
         break;
 
@@ -1762,7 +1764,7 @@ void menuModelSetup(event_t event)
         break;
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_CHANNELS:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -1794,7 +1796,7 @@ void menuModelSetup(event_t event)
         break;
       }
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_RACING_MODE:
       {
         ModuleData & moduleData = g_model.moduleData[moduleIdx];
@@ -1904,7 +1906,7 @@ void menuModelSetup(event_t event)
         break;
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_NOT_ACCESS_RXNUM_BIND_RANGE:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -2078,7 +2080,7 @@ void menuModelSetup(event_t event)
       }
 
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_FAILSAFE:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -2140,7 +2142,7 @@ void menuModelSetup(event_t event)
         }
         break;
 #endif
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_OPTIONS:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -2310,7 +2312,7 @@ void menuModelSetup(event_t event)
       break;
 
 #if defined(MULTIMODULE)
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_AUTOBIND:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -2342,7 +2344,7 @@ void menuModelSetup(event_t event)
         break;
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_DISABLE_MAPPING:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -2370,7 +2372,7 @@ void menuModelSetup(event_t event)
 #endif
 
 #if defined(MULTIMODULE)
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_STATUS:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -2378,10 +2380,10 @@ void menuModelSetup(event_t event)
 #endif
 #endif
 #if defined(AFHDS3) && defined(HARDWARE_EXTERNAL_MODULE)
-      case ITEM_MODEL_SETUP_EXTERNAL_MODULE_AFHDS3_STATUS: 
+      case ITEM_MODEL_SETUP_EXTERNAL_MODULE_AFHDS3_STATUS:
 #endif
 #if (defined(MULTIMODULE) | defined(DSMP) | defined(AFHDS3)) && defined(HARDWARE_EXTERNAL_MODULE)
-      case ITEM_MODEL_SETUP_EXTERNAL_MODULE_DSMP_STATUS: 
+      case ITEM_MODEL_SETUP_EXTERNAL_MODULE_DSMP_STATUS:
       {
         // MultiModule & LemonDSMP & AFHDS3 Status
         lcdDrawTextIndented(y, STR_MODULE_STATUS);
@@ -2401,7 +2403,7 @@ void menuModelSetup(event_t event)
 
 
 #if defined(MULTIMODULE)
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_SYNCSTATUS:
 #endif
 #if defined(HARDWARE_EXTERNAL_MODULE)
@@ -2558,7 +2560,7 @@ void menuModelSetup(event_t event)
   // some field just finished being edited
   if (old_editMode > 0 && s_editMode == 0) {
     switch(menuVerticalPosition) {
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_NOT_ACCESS_RXNUM_BIND_RANGE:
       case ITEM_MODEL_SETUP_INTERNAL_MODULE_PXX2_MODEL_NUM:
         if (menuHorizontalPosition == 0)

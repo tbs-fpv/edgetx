@@ -68,6 +68,7 @@ cd build
 
 declare -a simulator_plugins=(x9lite x9lites
                               x7 x7access
+                              tango2 mambo
                               t8 t12 t12max tx12 tx12mk2
                               zorro commando8 boxer pocket mt12 gx12
                               tlite tpro tprov2 tpros bumblebee lr3pro t14

@@ -44,6 +44,7 @@ extern "C" {
 
 #include "hal/gpio.h"
 #include "hal/usb_driver.h"
+#include "usb_descriptor.h"
 
 #include "hal.h"
 #include "debug.h"
@@ -54,6 +55,11 @@ extern "C" {
   #define DEVICE_ID DEVICE_FS
 #endif
 
+#if defined(USB_AGENT)
+#include "tbs/crsf/crsf.h"
+#include "tbs/usb_hid_agent.h"
+#endif
+
 #if defined(BOOT)
 
 // TODO: configured where needed
@@ -61,13 +67,12 @@ extern "C" {
 #if defined(FIRMWARE_QSPI)
 static const USBD_DFU_MediaTypeDef* _dfu_media[USBD_DFU_MAX_ITF_NUM] = {nullptr};
 #endif
-
 #else
 #define DEFAULT_USB_MODE USB_UNSELECTED_MODE;
 #endif
 
 static bool usbDriverStarted = false;
-static usbMode selectedUsbMode = DEFAULT_USB_MODE;
+usbMode selectedUsbMode = DEFAULT_USB_MODE;
 
 USBD_HandleTypeDef hUsbDevice;
 
@@ -189,6 +194,12 @@ void usbStart()
 #endif
       USBD_RegisterClass(&hUsbDevice, &USBD_HID);
       break;
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+    case USB_AGENT_MODE:
+      // initialize USB as HID device
+      USBD_RegisterClass(&hUsbDevice, &USBD_AGENT);
+      break;
+#endif
 #if defined(USB_SERIAL)
     case USB_SERIAL_MODE:
       // initialize USB as CDC device (virtual serial port)

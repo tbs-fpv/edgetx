@@ -107,6 +107,12 @@ void onUSBConnectMenu(const char *result)
   } else if (result == STR_USB_JOYSTICK) {
     setSelectedUsbMode(USB_JOYSTICK_MODE);
   }
+#if defined(USB_AGENT)
+  else if (result == STR_USB_AGENT) {
+    setSelectedUsbMode(USB_AGENT_MODE);
+  }
+#endif
+
 #if defined(USB_SERIAL)
   else if (result == STR_USB_SERIAL) {
     setSelectedUsbMode(USB_SERIAL_MODE);
@@ -120,12 +126,16 @@ void onUSBConnectMenu(const char *result)
 void openUsbMenu()
 {
   if (popupMenuHandler != onUSBConnectMenu) {
-    POPUP_MENU_TITLE(STR_SELECT_MODE);
+#if defined(USB_AGENT)
+    POPUP_MENU_ADD_ITEM(STR_USB_AGENT);
+ #endif
+    POPUP_MENU_ADD_ITEM(STR_USB_JOYSTICK);
+    POPUP_MENU_ADD_ITEM(STR_USB_MASS_STORAGE);
 #if defined(USB_SERIAL)
-    POPUP_MENU_START(onUSBConnectMenu, 3, STR_USB_JOYSTICK, STR_USB_MASS_STORAGE, STR_USB_SERIAL);
-#else
-    POPUP_MENU_START(onUSBConnectMenu, 2, STR_USB_JOYSTICK, STR_USB_MASS_STORAGE);
+    POPUP_MENU_ADD_ITEM(STR_USB_SERIAL);
 #endif
+    POPUP_MENU_TITLE(STR_SELECT_MODE);
+    POPUP_MENU_START(onUSBConnectMenu);
   }
 }
 
@@ -203,6 +213,10 @@ void handleUsbConnection()
     setSelectedUsbMode(USB_UNSELECTED_MODE);
   }
 #endif  // defined(STM32) && !defined(SIMU)
+
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+  usbAgentUpdate();
+#endif
 }
 
 void checkSpeakerVolume()
@@ -504,6 +518,22 @@ void perMain()
 
 #if defined(USE_HATS_AS_KEYS)
   checkHatsAsKeys();
+#endif
+
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+  crsfFifoHandler();
+
+  if (getCrsfFlag(CRSF_FLAG_SCHEDULE_REBOOT) || getCrsfFlag(CRSF_FLAG_SHOW_BOOTLOADER_ICON)) {
+    lcdClear();
+    lcdOn();
+    drawDownload();
+    lcdRefresh();
+    if (getCrsfFlag(CRSF_FLAG_SCHEDULE_REBOOT)) {
+      RTOS_WAIT_MS(500);
+      NVIC_SystemReset();
+    }
+    return;
+  }
 #endif
 
 #if defined(RTC_BACKUP_RAM)

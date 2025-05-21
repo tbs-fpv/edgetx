@@ -345,7 +345,11 @@ void generalDefault()
 
   g_eeGeneral.ttsLanguage[0] = 'e';
   g_eeGeneral.ttsLanguage[1] = 'n';
+#if defined(MANUFACTURER_TBS)
+  g_eeGeneral.wavVolume = 0;
+#else
   g_eeGeneral.wavVolume = 2;
+#endif
   g_eeGeneral.backgroundVolume = 1;
 
   auto controls = adcGetMaxInputs(ADC_INPUT_MAIN);
@@ -383,6 +387,10 @@ void generalDefault()
 #endif
 
 #if defined(MANUFACTURER_RADIOMASTER)
+  g_eeGeneral.audioMuteEnable = 1;
+#endif
+
+#if defined(TBS_RELEASE)
   g_eeGeneral.audioMuteEnable = 1;
 #endif
 
@@ -619,6 +627,7 @@ void checkMultiLowPower()
 }
 #endif
 
+#if !defined(HAVE_NO_RTC_BATTERY)
 static void checkRTCBattery()
 {
   if (!mixerTaskRunning()) getADC();
@@ -626,6 +635,7 @@ static void checkRTCBattery()
     ALERT(STR_BATTERY, STR_WARN_RTC_BATTERY_LOW, AU_ERROR);
   }
 }
+#endif
 
 void checkSDfreeStorage() {
   if(sdIsFull()) {
@@ -670,7 +680,9 @@ void checkAll(bool isBootCheck)
   if (isBootCheck && !g_eeGeneral.disableRtcWarning) {
     // only done once at board start
     enableVBatBridge();
+#if !defined(HAVE_NO_RTC_BATTERY)
     checkRTCBattery();
+#endif
   }
   disableVBatBridge();
 
@@ -1080,6 +1092,11 @@ void edgeTxClose(uint8_t shutdown)
     hapticOff();
 #endif
   }
+#if defined(TBS_CROSSFIRE_TASK)
+  else {
+    crossfireSuspend();
+  }
+#endif
 
   logsClose();
 
@@ -1136,6 +1153,10 @@ void edgeTxResume()
 #endif
 
   referenceSystemAudioFiles();
+
+#if defined(TBS_CROSSFIRE_TASK)
+  crossfireResume();
+#endif
 }
 
 #define INSTANT_TRIM_MARGIN 10 /* around 1% */
@@ -1387,7 +1408,9 @@ void edgeTxInit()
   // No RTC backup - try and load even for EM startup
   storageReadRadioSettings(false);
 #endif
-
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+  crossfireFirmwareStart();
+#endif
 #if defined(GUI) && !defined(COLORLCD)
 #if LCD_W == 128
   lcdSetInvert(g_eeGeneral.invertLCD);
@@ -1501,6 +1524,11 @@ void edgeTxInit()
   if (!UNEXPECTED_SHUTDOWN()) {
 
     uint8_t calibration_needed = !(startOptions & OPENTX_START_NO_CALIBRATION) && (g_eeGeneral.chkSum != evalChkSum());
+
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+    if (crossfireSharedData->stick_state < CALIB_FINISHED)
+      calibration_needed = true;
+#endif
 
 #if defined(GUI)
     if (!calibration_needed && !(startOptions & OPENTX_START_NO_SPLASH)) {

@@ -25,6 +25,9 @@
 #include "stm32_gpio.h"
 #include "stm32_serial_driver.h"
 #include "stm32_softserial_driver.h"
+#if defined(TBS_CROSSFIRE_TASK)
+#include "tbs/soft_internal_module_driver.h"
+#endif
 #include "stm32_dma.h"
 #include "trainer_driver.h"
 
@@ -64,7 +67,8 @@ static const stm32_usart_t intmoduleUSART = {
 };
 
 DEFINE_STM32_SERIAL_PORT(InternalModule, intmoduleUSART, INTMODULE_FIFO_SIZE, 0);
-
+#elif defined(SOFTWARE_INTERNAL_MODULE)
+  // for tbs
 #else // INTMODULE_USART
 
 #include "stm32_pulse_driver.h"
@@ -375,7 +379,7 @@ extern "C" void TELEMETRY_TIMER_IRQHandler()
 }
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
 
 static void _internal_module_set_pwr(uint8_t enable)
 {
@@ -410,6 +414,22 @@ static const etx_module_port_t _internal_ports[] = {
     .dir_flags = ETX_MOD_DIR_TX_RX | ETX_MOD_FULL_DUPLEX,
     .drv = { .serial = &STM32SerialDriver },
     .hw_def = REF_STM32_SERIAL_PORT(InternalModule),
+  },
+#elif defined(SOFTWARE_INTERNAL_MODULE)
+  {
+  #if defined(TBS_CROSSFIRE_TASK)
+    .port = ETX_MOD_PORT_VIRTUAL,
+    .type = ETX_MOD_TYPE_SERIAL,
+    .dir_flags = ETX_MOD_DIR_TX_RX,
+    .drv = { .serial = &SoftwareModuleDriver },
+    .hw_def = REF_VIRTUAL_SERIAL_PORT(InternalModule),  // not used
+  #else
+    .port = NULL,
+    .type = NULL,
+    .dir_flags = NULL,
+    .drv = NULL,
+    .hw_def = NULL,  // not used
+  #endif
   },
 #else // INTMODULE_USART
   {
@@ -623,7 +643,7 @@ void boardInitModulePorts()
 }
 
 BEGIN_MODULES()
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   &_internal_module,
 #else
   nullptr,

@@ -20,6 +20,7 @@
  */
 
 #include "hal/key_driver.h"
+#include "hal/adc_driver.h"
 
 #include "stm32_hal_ll.h"
 #include "stm32_gpio_driver.h"

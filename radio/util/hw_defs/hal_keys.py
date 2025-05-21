@@ -148,8 +148,9 @@ class Key:
 
 class Trim:
 
-    def __init__(self, name, dec, inc):
+    def __init__(self, name, type, dec, inc):
         self.name = name
+        self.type = type
         if dec and dec.gpio and inc and inc.gpio:
             self.dec = dec
             self.inc = inc
@@ -179,12 +180,16 @@ def parse_trims(hw_defs):
         inc = get_trim_switch(hw_defs, t['inc'])
 
         if dec and inc:
-            trims.append(Trim(name, dec, inc))
+            trims.append(Trim(name, 'GPIO', dec, inc))
 
         elif t.get('input'):
             input = t['input']
             if f'TRIMS_VIRTUAL_{input}' in hw_defs:
-                trims.append(Trim(name, None, None))
+                trims.append(Trim(name, 'VIRTUAL', None, None))
+            if f'TRIMS_ADC_{input}' in hw_defs:
+                trims.append(Trim(name, 'ADC', None, None))
+            if f'TRIMS_ROTARY_{input}' in hw_defs:
+                trims.append(Trim(name, 'ROTARY', None, None))
 
     return trims
 

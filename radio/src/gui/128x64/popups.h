@@ -24,7 +24,11 @@
 #include <keys.h>
 
 #define MESSAGEBOX_X                   8
+#if LCD_H > 64
+#define MESSAGEBOX_Y                   25
+#else
 #define MESSAGEBOX_Y                   8
+#endif
 #define MESSAGEBOX_W                   (LCD_W - 15)
 
 #define MENU_X                         MESSAGEBOX_X
@@ -33,9 +37,17 @@
 
 #define WARNING_LINE_LEN               24
 #define WARNING_LINE_X                 12
+#if LCD_H > 64
+#define WARNING_LINE_Y                 4*FH
+#else
 #define WARNING_LINE_Y                 MESSAGEBOX_Y + 2
+#endif
 
+#if LCD_H > 64
+#define POPUP_MENU_MAX_LINES         24
+#else
 #define POPUP_MENU_MAX_LINES         13
+#endif
 #define MENU_MAX_DISPLAY_LINES       6
 #define MENU_LINE_LENGTH             (LEN_MODEL_NAME+12)
 

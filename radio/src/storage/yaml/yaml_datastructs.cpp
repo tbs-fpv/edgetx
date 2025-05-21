@@ -78,6 +78,10 @@
  #else
   #include "yaml_datastructs_x9dp2019.cpp"
  #endif
+#elif defined(RADIO_TANGO2)
+ #include "yaml_datastructs_tango2.cpp"
+#elif defined(RADIO_MAMBO)
+ #include "yaml_datastructs_mambo.cpp"
 #else
 #error "Board not supported by YAML storage"
 #endif

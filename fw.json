@@ -49,7 +49,9 @@
         ["RadioMaster TX12MK2", "tx12mk2-"],
         ["RadioMaster TX16S", "tx16s-"],
         ["RadioMaster Zorro","zorro-"],
-        ["RadioMaster GX12", "gx12-"]
+        ["RadioMaster GX12", "gx12-"],
+        ["TBS MAMBO","mambo-"],
+        ["TBS Tango 2","tango2-"]
     ],
     "changelog": "- Major initial bug fixes"
 }

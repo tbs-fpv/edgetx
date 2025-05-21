@@ -24,6 +24,7 @@
 
 #include "hal/adc_driver.h"
 
+#if !defined(RADIO_CALIBRATION_HALL)
 void menuCommonCalib(event_t event)
 {
   // make sure we don't scroll while calibrating
@@ -72,4 +73,4 @@ void menuCommonCalib(event_t event)
 
   doMainScreenGraphics();
 }
-
+#endif

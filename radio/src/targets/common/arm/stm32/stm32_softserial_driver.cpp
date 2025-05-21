@@ -95,7 +95,7 @@ static bool _softserial_init_rx(const stm32_softserial_rx_port* port,
   LL_TIM_ClearFlag_UPDATE(port->TIMx);
   LL_TIM_EnableIT_UPDATE(port->TIMx);
 
-  NVIC_SetPriority(port->TIM_IRQn, 0);
+  NVIC_SetPriority(port->TIM_IRQn, 6);
   NVIC_EnableIRQ(port->TIM_IRQn);
 
   if (port->dir_GPIO != GPIO_UNDEF) {

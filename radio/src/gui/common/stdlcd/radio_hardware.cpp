@@ -162,7 +162,7 @@ static void _init_menu_tab_array(uint8_t* tab, size_t len)
 #if defined(AUDIO_MUTE_GPIO)
   tab[ITEM_RADIO_HARDWARE_AUDIO_MUTE] = 0;
 #endif
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   tab[ITEM_RADIO_HARDWARE_INTERNAL_MODULE_TYPE] = 0;
   tab[ITEM_RADIO_HARDWARE_INTERNAL_MODULE_BAUDRATE] =
     isInternalModuleCrossfire() ? (uint8_t)0 : HIDDEN_ROW;

@@ -179,7 +179,11 @@ static void sbusSendPulses(void* ctx, uint8_t* buffer, int16_t* channels, uint8_
   if (port && port->set_inverted) {
     port->set_inverted(GET_SBUS_POLARITY(module));
   } else if (drv->setPolarity) {
+#if defined (RADIO_MAMBO)
+    drv->setPolarity(drv_ctx, !GET_SBUS_POLARITY(module));
+#else
     drv->setPolarity(drv_ctx, GET_SBUS_POLARITY(module));
+#endif
   }
     
   drv->sendBuffer(drv_ctx, buffer, p_data - buffer);

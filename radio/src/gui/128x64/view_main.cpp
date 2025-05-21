@@ -26,6 +26,21 @@
 #include "switches.h"
 #include "input_mapping.h"
 
+#if defined(USE_ROTARY_TRIMS)
+
+#define RUD_STICK       0
+#define ELE_STICK       1
+#define THR_STICK       2
+#define AIL_STICK       3
+
+struct {
+  int8_t preStickIdx = -1;
+  int8_t curStickIdx = -1;
+  tmr10ms_t preEnterTime;
+  bool preEnterValid = false;
+} RotaryTrims;
+#endif
+
 #define BIGSIZE       DBLSIZE
 #if defined (PCBTARANIS)
   #define LBOX_CENTERX  (LCD_W/4 + 12)
@@ -57,7 +72,7 @@
 #define RSSSI_Y       (31)
 #define RSSI_MAX      105
 #define CLOCK_X       53
-#define CLOCK_Y       57
+#define CLOCK_Y       (LCD_H - 7)
 
 #if defined(ASTERISK) || (!defined(USE_WATCHDOG) && !defined(SIMU)) || defined(LOG_TELEMETRY) || \
     defined(LOG_BLUETOOTH) || defined(DEBUG_LATENCY)
@@ -147,6 +162,20 @@ void doMainScreenGraphics()
   drawPotsBars();
 }
 
+#if defined(MANUFACTURER_TBS) && !defined(SIMU)
+void doMainScreenGraphicsCalibration(uint8_t viewMask, int16_t * sticksOverride)
+{
+  int16_t* calibStickValPtr = sticksOverride ? sticksOverride : calibratedAnalogs;
+
+  drawStick(LBOX_CENTERX, calibStickValPtr[ADC_MAIN_LH], calibStickValPtr[ADC_MAIN_LV]);
+  drawStick(RBOX_CENTERX, calibStickValPtr[ADC_MAIN_RH], calibStickValPtr[ADC_MAIN_RV]);
+
+  if (viewMask & MAINSCREEN_GRAPHICS_POTS) {
+    drawPotsBars();
+  }
+}
+#endif
+
 void displayTrims(uint8_t phase)
 {
 #if defined(SURFACE_RADIO)
@@ -187,13 +216,28 @@ void displayTrims(uint8_t phase)
     LcdFlags nFlg = TINSIZE;
 
     if (vert[i]) {
+#if (LCD_H >= 96)
+      ym = 61;
+#else
       ym = 31;
+#endif
       if (!getPixel(xm, ym))
         lcdDrawSolidVerticalLine(xm, ym - TRIM_LEN, TRIM_LEN * 2 + 1);
       if (squareMarker) {
         if (i != 2 || !g_model.thrTrim) {
+#if defined(USE_ROTARY_TRIMS)
+          if (RotaryTrims.curStickIdx == i) {
+            lcdDrawSolidVerticalLine(xm - 1, ym - TRIM_LEN, TRIM_LEN * 2 + 1);
+            lcdDrawSolidVerticalLine(xm + 1, ym - TRIM_LEN, TRIM_LEN * 2 + 1);
+          }
+          else {
+            lcdDrawSolidVerticalLine(xm - 1, ym - 1, 3);
+            lcdDrawSolidVerticalLine(xm + 1, ym - 1, 3);
+          }
+#else
           lcdDrawSolidVerticalLine(xm - 1, ym - 1, 3);
           lcdDrawSolidVerticalLine(xm + 1, ym - 1, 3);
+#endif
         }
         ym -= val;
         lcdDrawFilledRect(xm - 3, ym - 3, 7, 7, SOLID, att | ERASE);
@@ -225,12 +269,27 @@ void displayTrims(uint8_t phase)
       nFlg |= VERTICAL;
     }
     else {
+#if (LCD_H >= 96)
+      ym = 92;
+#else
       ym = 60;
+#endif
       if (!getPixel(xm, ym))
         lcdDrawSolidHorizontalLine(xm - TRIM_LEN, ym, TRIM_LEN * 2 + 1);
       if (squareMarker) {
+#if defined(USE_ROTARY_TRIMS)
+        if (RotaryTrims.curStickIdx == i) {
+          lcdDrawSolidHorizontalLine(xm - TRIM_LEN, ym - 1, TRIM_LEN * 2 + 1);
+          lcdDrawSolidHorizontalLine(xm - TRIM_LEN, ym + 1, TRIM_LEN * 2 + 1);
+        }
+        else {
+          lcdDrawSolidHorizontalLine(xm - 1, ym - 1, 3);
+          lcdDrawSolidHorizontalLine(xm - 1, ym + 1, 3);
+        }
+#else
         lcdDrawSolidHorizontalLine(xm - 1, ym - 1, 3);
         lcdDrawSolidHorizontalLine(xm - 1, ym + 1, 3);
+#endif
         xm += val;
         lcdDrawFilledRect(xm - 3, ym - 3, 7, 7, SOLID, att | ERASE);
         if (dir >= 0) {
@@ -387,6 +446,11 @@ void menuMainView(event_t event)
       */
     case EVT_KEY_NEXT_PAGE:
     case EVT_KEY_PREVIOUS_PAGE:
+#if defined(USE_ROTARY_TRIMS)
+      if (getRotaryTrimMode() != EDIT_TRIM_DISABLED) {
+        break;
+      }
+#endif
       if (view_base == VIEW_INPUTS)
         g_eeGeneral.view ^= ALTERNATE_VIEW;
       else
@@ -414,7 +478,39 @@ void menuMainView(event_t event)
     case EVT_KEY_GENERAL_MENU:
       pushMenu(menuTabGeneral[0].menuFunc);
       break;
+#if defined(USE_ROTARY_TRIMS)
+      case EVT_KEY_FIRST(KEY_ENTER):
+        if (!RotaryTrims.preEnterValid) {
+          RotaryTrims.preEnterValid = true;
+          RotaryTrims.preEnterTime = get_tmr10ms();
+        }
+        else {
+          RotaryTrims.preEnterValid = false;
+          if (getRotaryTrimMode() + 1 > EDIT_TRIM_MAX)
+            setRotaryTrimMode(EDIT_TRIM_1);
+          else
+            setRotaryTrimMode(getRotaryTrimMode() + 1);
 
+          RotaryTrims.curStickIdx = inputMappingConvertMode(getRotaryTrimMode() - 1);
+
+          if (RotaryTrims.preStickIdx != RotaryTrims.curStickIdx) {
+            if (RotaryTrims.curStickIdx == RUD_STICK) {
+              AUDIO_RUDDER_TRIM();
+            }
+            else if (RotaryTrims.curStickIdx == ELE_STICK) {
+              AUDIO_ELEVATOR_TRIM();
+            }
+            else if (RotaryTrims.curStickIdx == THR_STICK) {
+              AUDIO_THROTTLE_TRIM();
+            }
+            else if (RotaryTrims.curStickIdx == AIL_STICK) {
+              AUDIO_AILERON_TRIM();
+            }
+            RotaryTrims.preStickIdx = RotaryTrims.curStickIdx;
+          }
+        }
+        break;
+#endif
 #if defined(EVT_KEY_PREVIOUS_VIEW)
       // TODO try to split those 2 cases on 9X
     case EVT_KEY_PREVIOUS_VIEW:
@@ -427,6 +523,11 @@ void menuMainView(event_t event)
 #else
     case EVT_KEY_NEXT_VIEW:
       g_eeGeneral.view = (view_base == 0 ? VIEW_COUNT - 1 : view_base - 1);
+#if defined(MANUFACTURER_TBS)
+      if (g_eeGeneral.view == VIEW_TIMER2 && !g_model.timers[1].mode) {
+        g_eeGeneral.view--;
+      }
+#endif
       storageDirty(EE_GENERAL);
       break;
 #endif
@@ -448,8 +549,21 @@ void menuMainView(event_t event)
         gvarDisplayTimer = 0;
       }
 #endif
+#if defined(USE_ROTARY_TRIMS)
+      if (getRotaryTrimMode() != EDIT_TRIM_DISABLED) {
+        setRotaryTrimMode(EDIT_TRIM_DISABLED);
+        AUDIO_MAIN_MENU();
+        RotaryTrims.curStickIdx = -1;
+        RotaryTrims.preStickIdx = -1;
+      }
+#endif
       break;
   }
+#if defined(USE_ROTARY_TRIMS)
+  if (RotaryTrims.preEnterValid && (get_tmr10ms() - RotaryTrims.preEnterTime) > 50) {
+    RotaryTrims.preEnterValid = false;
+  }
+#endif
 
   switch (view_base) {
     case VIEW_CHAN_MONITOR:
@@ -529,7 +643,7 @@ void menuMainView(event_t event)
             auto switch_display = switchGetDisplayPosition(i);
             if (maxSwitch < 7) {
               coord_t x = switch_display.col == 0 ? 3 * FW + 3 : 18 * FW + 1;
-              coord_t y = 33 + switch_display.row * FH;
+              coord_t y = (LCD_H >= 96 ? 52 : 33) + switch_display.row * FH;
               getvalue_t val = getValue(MIXSRC_FIRST_SWITCH + i);
               if (val == 0) x -= 1;
               getvalue_t sw =

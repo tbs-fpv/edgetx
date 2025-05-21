@@ -30,6 +30,12 @@
 
 #define MENUS_SCROLLBAR_WIDTH          0
 
+#if LCD_DEPTH == 4
+#define GREY(x)                        ((x) * 0x010000)
+#define GREY_DEFAULT                   GREY(11)
+#define FILL_WHITE                     0x10
+#endif
+
 #define NUM_BODY_LINES                 (LCD_LINES-1)
 #define TEXT_VIEWER_LINES              NUM_BODY_LINES
 #define MENU_HEADER_HEIGHT             FH
@@ -163,6 +169,18 @@ extern const unsigned char sticks[] ;
 
 void drawSplash();
 void drawScreenIndex(uint8_t index, uint8_t count, uint8_t attr);
+
+#if defined(MANUFACTURER_TBS) && !defined(SIMU)
+typedef enum {
+  MAINSCREEN_GRAPHICS_NONE = 0,
+  MAINSCREEN_GRAPHICS_STICKS = 0x01,
+  MAINSCREEN_GRAPHICS_POTS = 0x02,
+  MAINSCREEN_GRAPHICS_ALL = 0xFF
+} MainScreenGraphicsView;
+void drawDownload();
+void doMainScreenGraphicsCalibration(uint8_t viewMask, int16_t * sticksOverride);
+#endif
+
 void drawStick(coord_t centrex, int16_t xval, int16_t yval);
 void drawWheel(coord_t centrex, int16_t wval);
 void drawThrottle(coord_t centrex, int16_t tval);

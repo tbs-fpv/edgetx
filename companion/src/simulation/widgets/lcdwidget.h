@@ -59,7 +59,7 @@ class LcdWidget : public QWidget
     }
   }
 
-  void setData(int width, int height, int depth = 1);
+  void setData(int width, int height, int depth = 1, bool invert = false);
   void setBgDefaultColor(const QColor &color);
   void setFgDefaultColor(const QColor &color);
   void setBackgroundColor(const QColor &color);
@@ -76,6 +76,7 @@ class LcdWidget : public QWidget
   int lcdHeight;
   int lcdDepth;
   int lcdSize;
+  bool lcdInvert;
 
   unsigned char *localBuf;
 

@@ -101,6 +101,11 @@ class ADCInputParser:
             'suffix': 'RTC_BAT',
         },
         {
+            'type': 'TRIMS',
+            'name': 'TRIMS',
+            'suffix': 'TRIMS',
+        },
+        {
             'range': AZ_seq(),
             'type': ADCInput.TYPE_SWITCH,
             'suffix': 'SW{}',

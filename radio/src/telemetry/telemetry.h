@@ -86,6 +86,10 @@ struct etx_proto_driver_t;
 // processing for that module.
 void telemetryFrameTrigger_ISR(uint8_t module, const etx_proto_driver_t* drv);
 
+// Call from non-ISR to schedule telemetry frame
+// processing for that module.
+void telemetryFrameTrigger(uint8_t module, const etx_proto_driver_t* drv);
+
 #define TELEMETRY_AVERAGE_COUNT        3
 
 enum {

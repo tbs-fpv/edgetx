@@ -52,7 +52,6 @@ char * main_thread_error = nullptr;
 bool simu_shutdown = false;
 bool simu_running = false;
 
-
 volatile rotenc_t rotencValue = 0;
 volatile uint32_t rotencDt = 0;
 
@@ -488,6 +487,11 @@ uint32_t readTrims()
       trims |= 1 << i;
     }
   }
+
+#if defined(USE_ROTARY_TRIMS)
+  trims = getRotaryTrimState();
+  setRotaryTrimState(0);
+#endif
 
   return trims;
 }

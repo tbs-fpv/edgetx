@@ -196,6 +196,13 @@ uint8_t keysGetTrimState(uint8_t trim);
 bool keysPollingCycle();
 bool rotaryEncoderPollingCycle();
 
+#if defined(USE_ROTARY_TRIMS)
+void setRotaryTrimState(uint8_t trimState);
+uint8_t getRotaryTrimState();
+void setRotaryTrimMode(uint8_t trimMode);
+uint8_t getRotaryTrimMode();
+#endif
+
 #if defined(USE_HATS_AS_KEYS)
 void setHatsAsKeys(bool val);
 bool getHatsAsKeys();

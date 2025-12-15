@@ -27,12 +27,22 @@
 #include "board.h"
 
 constexpr coord_t BOX_WIDTH         = 23;
+#if defined(RADIO_TANGO2)
+constexpr coord_t BOX_CENTERY       = LCD_H - BOX_WIDTH/2 - 23;
+#else
 constexpr coord_t BOX_CENTERY       = LCD_H - BOX_WIDTH/2 - 9;
+#endif
 constexpr coord_t MARKER_WIDTH      = 5;
 #define CENTER_OFS                    0
 
-#define BITMAP_BUFFER_SIZE(w, h)      (2 + (w) * (((h)+7)/8))
-#define DISPLAY_BUFFER_SIZE           (LCD_W*((LCD_H+7)/8))
+#if LCD_DEPTH == 4
+  #define COLOUR_MASK(x)                 ((x) & 0x0F0000)
+  #define BITMAP_BUFFER_SIZE(w, h)       (2 + (w) * (((h)+7)/8)*4)
+  #define DISPLAY_BUFFER_SIZE            (LCD_W*LCD_H*4/8)
+#else
+  #define BITMAP_BUFFER_SIZE(w, h)      (2 + (w) * (((h)+7)/8))
+  #define DISPLAY_BUFFER_SIZE           (LCD_W*((LCD_H+7)/8))
+#endif
 
 #include "lcd_common.h"
 
@@ -43,6 +53,11 @@ inline void lcdDrawBitmap(coord_t x, coord_t y, const uint8_t * bitmap)
   lcdDraw1bitBitmap(x, y, bitmap, 0);
 }
 
+#if defined(CHARGING_ANIMATION)
+void drawChargingState(void);
+void drawFullyCharged(void);
+#endif  // CHARGING_ANIMATION
+
 uint8_t * lcdLoadBitmap(uint8_t * dest, const char * filename, uint8_t width, uint8_t height);
 
 inline pixel_t getPixel(uint8_t x, uint8_t y)
@@ -51,7 +66,12 @@ inline pixel_t getPixel(uint8_t x, uint8_t y)
     return 0;
   }
 
+#if LCD_DEPTH == 4
+  pixel_t * p = &displayBuf[(y * LCD_W >> 1) + (x >> 1)];
+  return (x & 1) ? (*p >> 4) : (*p & 0x0F);
+#else
   pixel_t pixel = displayBuf[(y / 8) * LCD_W + x];
   pixel_t mask = 1 << (y & 7);
   return ((pixel & mask) ? 0xf : 0);
+#endif  // LCD_DEPTH
 }

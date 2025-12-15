@@ -229,7 +229,7 @@ enum SerialPort {
 // GPS
 #define PILOTPOS_MIN_HDOP 500
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
 #define IS_INTERNAL_MODULE_ENABLED() \
   (g_model.moduleData[INTERNAL_MODULE].type != MODULE_TYPE_NONE)
 #else

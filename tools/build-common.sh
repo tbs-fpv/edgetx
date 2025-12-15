@@ -26,6 +26,12 @@ get_target_build_options() {
         gx12)
             BUILD_OPTIONS+="-DPCB=X7 -DPCBREV=GX12"
             ;;
+        tango2)
+            BUILD_OPTIONS+="-DPCB=X7 -DPCBREV=TANGO2"
+            ;;
+        mambo)
+            BUILD_OPTIONS+="-DPCB=X7 -DPCBREV=MAMBO"
+            ;;
         boxer)
             BUILD_OPTIONS+="-DPCB=X7 -DPCBREV=BOXER"
             ;;

@@ -158,7 +158,7 @@ static void _init_telemetry(uint8_t module, uint8_t telemetry_type)
 
 static void* ppmInit(uint8_t module)
 {
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   // only external module supported
   if (module == INTERNAL_MODULE) return nullptr;
 #endif
@@ -205,7 +205,11 @@ static void ppmSendPulses(void* ctx, uint8_t* buffer, int16_t* channels, uint8_t
 
   auto delay = GET_MODULE_PPM_DELAY(module) * 2;
   etx_timer_config_t cfg = {
+#if defined(RADIO_MAMBO)
+    .polarity = GET_MODULE_PPM_POLARITY(module),
+#else
     .polarity = !GET_MODULE_PPM_POLARITY(module),
+#endif
     .cmp_val = (uint16_t)delay,
   };
 

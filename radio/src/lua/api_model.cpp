@@ -62,7 +62,7 @@ static int luaModelGetInfo(lua_State *L)
   lua_pushtablenstring(L, "name", g_model.header.name);
   lua_pushtableboolean(L, "extendedLimits", g_model.extendedLimits);
   lua_pushtableinteger(L, "jitterFilter", g_model.jitterFilter);
-#if LCD_DEPTH > 1
+#if LCD_DEPTH > 1 && !defined(MODEL_HAVE_NO_BITMAP)
   lua_pushtablenstring(L, "bitmap", g_model.header.bitmap);
 #endif
 
@@ -110,7 +110,7 @@ static int luaModelSetInfo(lua_State *L)
       if (j > OVERRIDE_ON) j = OVERRIDE_ON;
       g_model.jitterFilter = j;
     }
-#if LCD_DEPTH > 1
+#if LCD_DEPTH > 1 && !defined(MODEL_HAVE_NO_BITMAP)
     else if (!strcmp(key, "bitmap")) {
       const char * name = luaL_checkstring(L, -1);
       strncpy(g_model.header.bitmap, name, LEN_BITMAP_NAME);

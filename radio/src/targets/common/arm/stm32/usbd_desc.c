@@ -92,6 +92,14 @@
 #define USBD_HID_CONFIGURATION_FS_STRING    "HID Config"
 #define USBD_HID_INTERFACE_FS_STRING        "HID Interface"
 
+#if defined(USB_AGENT)
+#define USBD_AGENT_VID                      0x04D8
+#define USBD_AGENT_PID                      0xF94C
+#define USBD_AGENT_PRODUCT_FS_STRING        USB_NAME " Agent"
+#define USBD_AGENT_CONFIGURATION_FS_STRING  "HID Config"
+#define USBD_AGENT_INTERFACE_FS_STRING      "HID Interface"
+#endif
+
 #define USBD_CDC_VID                        USBD_VID_STM
 #define USBD_CDC_PID                        0x5740     // do not change, this ID is used by the ST USB driver for Windows
 #define USBD_CDC_PRODUCT_FS_STRING          USB_NAME " Serial Port"
@@ -306,7 +314,12 @@ uint8_t * USBD_FS_DeviceDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
       vid = USBD_HID_VID;
       pid = USBD_HID_PID;
       break;
-
+#if defined(USB_AGENT)
+    case USB_AGENT_MODE:
+      vid = USBD_AGENT_VID;
+      pid = USBD_AGENT_PID;
+      break;
+#endif
     case USB_SERIAL_MODE:
       vid = USBD_CDC_VID;
       pid = USBD_CDC_PID;
@@ -384,6 +397,11 @@ uint8_t * USBD_FS_ProductStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length
     case USB_JOYSTICK_MODE:
       USBD_GetString ((uint8_t*)USBD_HID_PRODUCT_FS_STRING, USBD_StrDesc, length);
       break;
+#if defined(USB_AGENT)
+    case USB_AGENT_MODE:
+      USBD_GetString ((uint8_t*)USBD_AGENT_PRODUCT_FS_STRING, USBD_StrDesc, length);
+      break;
+#endif
     case USB_SERIAL_MODE:
       USBD_GetString ((uint8_t*)USBD_CDC_PRODUCT_FS_STRING, USBD_StrDesc, length);
       break;
@@ -446,6 +464,11 @@ uint8_t * USBD_FS_ConfigStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
     case USB_JOYSTICK_MODE:
       USBD_GetString ((uint8_t*)USBD_HID_CONFIGURATION_FS_STRING, USBD_StrDesc, length);
       break;
+#if defined(USB_AGENT)
+    case USB_AGENT_MODE:
+      USBD_GetString ((uint8_t*)USBD_AGENT_CONFIGURATION_FS_STRING, USBD_StrDesc, length);
+      break;
+#endif
     case USB_SERIAL_MODE:
       USBD_GetString ((uint8_t*)USBD_CDC_CONFIGURATION_FS_STRING, USBD_StrDesc, length);
       break;
@@ -473,6 +496,11 @@ uint8_t * USBD_FS_InterfaceStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *leng
     case USB_JOYSTICK_MODE:
       USBD_GetString ((uint8_t*)USBD_HID_INTERFACE_FS_STRING, USBD_StrDesc, length);
       break;
+#if defined(USB_AGENT)
+    case USB_AGENT_MODE:
+      USBD_GetString ((uint8_t*)USBD_AGENT_INTERFACE_FS_STRING, USBD_StrDesc, length);
+      break;
+#endif
     case USB_SERIAL_MODE:
       USBD_GetString ((uint8_t*)USBD_CDC_INTERFACE_FS_STRING, USBD_StrDesc, length);
       break;

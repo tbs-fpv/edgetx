@@ -64,6 +64,23 @@ void setDefaultMixes()
     mix->weight = 100;
     mix->srcRaw = i+1;
   }
+#if defined(MANUFACTURER_TBS)
+  #include "hal/switch_driver.h"
+  uint8_t numSwitches = switchGetMaxSwitches();
+  uint8_t numPots = adcGetMaxInputs(ADC_INPUT_FLEX);
+
+  for (int i = 0; i < numSwitches + numPots; i++) {
+    MixData * mix = mixAddress(i + max_sticks);
+    mix->destCh = i + max_sticks;
+    mix->weight = 100;
+
+    if (i >= numSwitches)
+      mix->srcRaw = MIXSRC_FIRST_POT + i - numSwitches;  // for the POTs
+    else
+      mix->srcRaw = MIXSRC_FIRST_SWITCH + i;             // for the SWITCHes
+  }
+#endif
+
   storageDirty(EE_MODEL);
 }
 
@@ -101,6 +118,8 @@ void setVendorSpecificModelDefaults(uint8_t id)
   g_model.moduleData[INTERNAL_MODULE].multi.rfProtocol = MODULE_SUBTYPE_MULTI_FRSKY;
   g_model.moduleData[INTERNAL_MODULE].subType = MULTI_FRSKYD_SUBTYPE_D8;
   g_model.moduleData[INTERNAL_MODULE].failsafeMode = FAILSAFE_NOPULSES;
+#elif defined(SOFTWARE_INTERNAL_MODULE)
+  g_model.moduleData[INTERNAL_MODULE].type = MODULE_TYPE_CROSSFIRE;
 #endif
 }
 

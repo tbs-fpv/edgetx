@@ -54,7 +54,11 @@ if(INTERNAL_MODULE_MULTI)
 endif()
 
 if(INTERNAL_MODULE_CRSF)
-  add_definitions(-DHARDWARE_INTERNAL_MODULE)
+  if(SOFTWARE_INTERNAL_MODULE)
+    add_definitions(-DSOFTWARE_INTERNAL_MODULE)
+  else()
+    add_definitions(-DHARDWARE_INTERNAL_MODULE)
+  endif()
   add_definitions(-DINTERNAL_MODULE_CRSF)
 endif()
 

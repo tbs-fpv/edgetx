@@ -142,6 +142,13 @@ const char * const audioFilenames[] = {
   "midstck2",
   "midstck3",
   "midstck4",
+#if defined(USE_ROTARY_TRIMS)
+  "aileron_trim",
+  "elevator_trim",
+  "throttle_trim",
+  "rudder_trim",
+  "main_page",
+#endif
   "midpot1",
   "midpot2",
 #if defined(PCBX9E)

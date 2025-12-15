@@ -58,6 +58,8 @@
 
 #if defined(SIMU)
   #define RADIO_VERSION FLAVOUR "-simu"
+#elif defined(RADIO_TANGO2)
+  #define RADIO_VERSION "tango"
 #else
   #define RADIO_VERSION FLAVOUR
 #endif

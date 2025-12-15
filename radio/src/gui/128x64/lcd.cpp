@@ -281,12 +281,27 @@ void lcdDraw1bitBitmap(coord_t x, coord_t y, const uint8_t * img, uint8_t idx, L
   const uint8_t * q = img;
   uint8_t w = *q++;
   uint8_t hb = ((*q++) + 7) / 8;
+#if LCD_DEPTH == 1
   uint8_t yShift = y % 8;
+#endif
 
   bool inv = (att & INVERS) ? true : (att & BLINK ? BLINK_ON_PHASE : false);
 
   q += idx*w*hb;
 
+#if LCD_DEPTH > 1
+  for (uint8_t yb = 0; yb < hb; yb++) {
+    for (uint8_t i = 0; i < w; i++) {
+      uint8_t b = *(q++);
+      uint8_t val = inv ? ~b : b;
+      for (int k = 0; k < 8; k++) {
+        if (val & (1 << k)) {
+          lcdDrawPoint(x + i, y + yb * 8 + k, 0);
+        }
+      }
+    }
+  }
+#else
   for (uint8_t yb = 0; yb < hb; yb++) {
 
     uint8_t *p = &displayBuf[(y / 8 + yb) * LCD_W + x];
@@ -311,6 +326,7 @@ void lcdDraw1bitBitmap(coord_t x, coord_t y, const uint8_t * img, uint8_t idx, L
       p++;
     }
   }
+#endif
 }
 
 #endif
@@ -332,6 +348,13 @@ void lcdMaskPoint(uint8_t * p, uint8_t mask, LcdFlags att)
 {
   ASSERT_IN_DISPLAY(p);
 
+#if LCD_DEPTH == 4
+  if (att & FILL_WHITE) {
+    if (*p & 0x0F) mask &= 0xF0;
+    if (*p & 0xF0) mask &= 0x0F;
+  }
+#endif
+
   if (att & FORCE)
     *p |= mask;
   else if (att & ERASE)
@@ -342,10 +365,24 @@ void lcdMaskPoint(uint8_t * p, uint8_t mask, LcdFlags att)
 
 void lcdDrawPoint(coord_t x, coord_t y, LcdFlags att)
 {
+#if defined(RADIO_TANGO2)
+  y = LCD_H - y - 1;
+#if defined(SIMU)
+  x = LCD_W - x - 1;
+#endif
+#endif
+#if LCD_DEPTH == 4
+  uint8_t * p = &displayBuf[y * (LCD_W / 2) + x / 2];
+  if (IS_IN_DISPLAY(p)) {
+    uint8_t mask = (x & 1) ? (0x0F - (COLOUR_MASK(att) >> 16)) : (0xF0 - (COLOUR_MASK(att) >> 12));
+    lcdMaskPoint(p, mask, att);
+  }
+#else
   uint8_t * p = &displayBuf[ y / 8 * LCD_W + x ];
   if (IS_IN_DISPLAY(p)) {
     lcdMaskPoint(p, bfBit<uint8_t>(y % 8), att);
   }
+#endif
 }
 
 void lcdInvertLine(int8_t line)
@@ -353,8 +390,13 @@ void lcdInvertLine(int8_t line)
   if (line < 0) return;
   if (line >= LCD_LINES) return;
 
+#if defined(RADIO_TANGO2)
+  uint8_t *p  = &displayBuf[(LCD_LINES - line - 1) * 4 * LCD_W];
+  for (coord_t x=0; x<4*LCD_W; x++) {
+#else
   uint8_t *p  = &displayBuf[line * LCD_W];
   for (coord_t x=0; x<LCD_W; x++) {
+#endif
     ASSERT_IN_DISPLAY(p);
     *p++ ^= 0xff;
   }
@@ -368,6 +410,20 @@ void lcdDrawHorizontalLine(coord_t x, coord_t y, coord_t w, uint8_t pat, LcdFlag
   if (x < 0) { w += x; x = 0; }
   if (x + w > LCD_W) { w = LCD_W - x; }
 
+#if LCD_DEPTH > 1
+  if (w <= 0) return;
+
+  while (w--) {
+    if (pat & 1) {
+      lcdDrawPoint(x, y, att);
+      pat = (pat >> 1) | 0x80;
+    }
+    else {
+      pat = pat >> 1;
+    }
+    x++;
+  }
+#else
   uint8_t *p  = &displayBuf[ y / 8 * LCD_W + x ];
   uint8_t msk = bfBit<uint8_t>(y % 8);
   while (w--) {
@@ -380,6 +436,7 @@ void lcdDrawHorizontalLine(coord_t x, coord_t y, coord_t w, uint8_t pat, LcdFlag
     }
     p++;
   }
+#endif
 }
 
 void lcdDrawVerticalLine(coord_t x, coord_t y, coord_t h, uint8_t pat, LcdFlags att)
@@ -393,6 +450,18 @@ void lcdDrawVerticalLine(coord_t x, coord_t y, coord_t h, uint8_t pat, LcdFlags 
   if (pat==DOTTED && !(y%2))
     pat = ~pat;
 
+#if LCD_DEPTH > 1
+  while (h--) {
+    if (pat & 1) {
+      lcdDrawPoint(x, y, att);
+      pat = (pat >> 1) | 0x80;
+    }
+    else {
+      pat = pat >> 1;
+    }
+    y++;
+  }
+#else
   uint8_t * p = &displayBuf[ y / 8 * LCD_W + x ];
   y = (y & 0x07);
   if (y) {
@@ -414,4 +483,58 @@ void lcdDrawVerticalLine(coord_t x, coord_t y, coord_t h, uint8_t pat, LcdFlags 
     ASSERT_IN_DISPLAY(p);
     lcdMaskPoint(p, (bfBitmask<uint8_t>(h)) & pat, att);
   }
+#endif
 }
+
+#if defined(CHARGING_ANIMATION)
+#define VBATT_W         (LCD_W - 40)
+#define VBATT_H         (45)
+#define VBATT_X         (((LCD_W - VBATT_W) / 2) - 2)
+#define VBATT_Y         (((LCD_H - VBATT_H) / 2) + 5)
+#define GET_BAT_BARS()  (limit<int8_t>(2, 20 * (g_vbat100mV + 56 - 90) / (30 - 78 + 56), 20))
+#define MAX_BARS()      (limit<int8_t>(2, 20 * (BATTERY_MAX + 56 - 90) / (30 - 78 + 56), 20))
+
+void drawChargingState(void)
+{
+  static uint8_t old_count = 0;
+  static uint8_t blink_count = 0;
+  static uint32_t charging_time = timersGetMsTick() / 10;
+
+  lcdDrawText(VBATT_X - 5, VBATT_Y - 13, "CHARGING: ", MIDSIZE);
+  putsVBat(VBATT_X + 90, VBATT_Y - 13, RIGHT|MIDSIZE);
+  lcdDrawSolidFilledRect(VBATT_X - 4, VBATT_Y, VBATT_W + 4, VBATT_H);
+  uint8_t count = GET_BAT_BARS();
+
+  for (uint8_t i = 0; i < count; i += 2) {
+    lcdDrawSolidFilledRect(VBATT_X + 2  + (VBATT_W / (MAX_BARS() - 1) * (i )), VBATT_Y + 7,  VBATT_W / MAX_BARS() + 1, VBATT_H - 14);
+  }
+  lcdDrawSolidFilledRect(VBATT_X + VBATT_W , VBATT_Y + 10, 9, VBATT_H - 10 * 2);
+
+  if (old_count != count) {
+    old_count = count;
+    blink_count = (count % 2) ? count + 1: count;
+  }
+  for (uint8_t i = (old_count % 2) ? old_count + 1: old_count; i < blink_count; i += 2) {
+    lcdDrawSolidFilledRect(VBATT_X + 2 + (VBATT_W / (MAX_BARS() - 1) * (i )), VBATT_Y + 7,  VBATT_W / MAX_BARS() + 1, VBATT_H - 14);
+  }
+  if ((timersGetMsTick() / 10 - charging_time) > 6) {
+    if ((blink_count ++) >= MAX_BARS()) {
+      blink_count = old_count;
+    }
+    charging_time = timersGetMsTick() / 10;
+  }
+}
+
+void drawFullyCharged(void)
+{
+  lcdDrawText(VBATT_X , VBATT_Y - 13, "CHARGED: ", MIDSIZE);
+  putsVolts(VBATT_X + 70, VBATT_Y - 13, 42, MIDSIZE);
+
+  lcdDrawSolidFilledRect(VBATT_X - 4, VBATT_Y, VBATT_W + 4, VBATT_H);
+
+  for (uint8_t i = 0; i < MAX_BARS(); i += 2) {
+    lcdDrawSolidFilledRect(VBATT_X + 2  + (VBATT_W / (MAX_BARS() - 1) * (i )), VBATT_Y + 7,  VBATT_W / MAX_BARS() + 1, VBATT_H - 14);
+  }
+  lcdDrawSolidFilledRect(VBATT_X + VBATT_W , VBATT_Y + 10, 9, VBATT_H - 10 * 2);
+}
+#endif

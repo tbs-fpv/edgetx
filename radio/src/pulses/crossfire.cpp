@@ -217,6 +217,14 @@ static void crossfireSendPulses(void* ctx, uint8_t* buffer, int16_t* channels, u
 #if defined(HARDWARE_EXTERNAL_MODULE)
   if (module == EXTERNAL_MODULE) endpoint = TELEMETRY_ENDPOINT_SPORT;
 #endif
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+  // set channels directly but let telemetry pass
+  if (module == INTERNAL_MODULE && outputTelemetryBuffer.destination != endpoint) {
+    for (uint32_t i = 0; i < nChannels; i++)
+      crossfireSharedData->channels[i] = channels[i];
+    return;
+  }
+#endif
   auto p_buf = buffer;
   setupPulsesCrossfire(module, p_buf, endpoint, channels, nChannels);
 
@@ -363,8 +371,13 @@ static void* crossfireInit(uint8_t module)
 
 #if defined(INTERNAL_MODULE_CRSF)
   if (module == INTERNAL_MODULE) {
+#if defined(HARDWARE_INTERNAL_MODULE)
     params.baudrate = INT_CROSSFIRE_BAUDRATE;
     mod_st = modulePortInitSerial(module, ETX_MOD_PORT_UART, &params, false);
+#endif
+#if defined(SOFTWARE_INTERNAL_MODULE)
+    mod_st = modulePortInitSerial(module, ETX_MOD_PORT_VIRTUAL, &params, false);
+#endif
 
     if (mod_st) {
       auto drv = modulePortGetSerialDrv(mod_st->rx);

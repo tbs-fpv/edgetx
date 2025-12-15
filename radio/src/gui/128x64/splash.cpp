@@ -23,7 +23,13 @@
 
 const unsigned char splashdata[]  = {
   'S','P','S',0,
+#if defined(RADIO_TANGO2)
+  #include "bitmaps/128x64/splash_tango2.lbm"
+#elif defined(RADIO_MAMBO)
+  #include "bitmaps/128x64/splash_mambo.lbm"
+#else
   #include "bitmaps/128x64/splash.lbm"
+#endif
   'S','P','E',0 };
 
 const unsigned char * const splash_lbm = splashdata+4;
@@ -34,3 +40,28 @@ void drawSplash()
   lcdDraw1bitBitmap(0, 0, splash_lbm, 0, 0);
   lcdRefresh();
 }
+
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+const unsigned char downloaddata[]  = {
+  'S','F','S',0,
+#if defined(RADIO_TANGO2)
+#include "bitmaps/128x64/download_96.lbm"
+#elif defined(RADIO_MAMBO)
+#include "bitmaps/128x64/download.lbm"
+#endif
+  'S','F','E',0 };
+
+const unsigned char * const download_lbm = downloaddata+4;
+void drawDownload()
+{
+  lcdClear();
+  lcdDraw1bitBitmap(0, 0, download_lbm, 0, 0);
+  if (getCrsfFlag(CRSF_FLAG_XF_UPDATE_REQUIRED))
+  {
+    clearCrsfFlag(CRSF_FLAG_XF_UPDATE_REQUIRED);
+    lcdDrawText(LCD_W>>1, LCD_H-FH, STR_UPDATE_CROSSFIRE, CENTERED);
+  }
+  lcdRefresh();
+  lcdRefreshWait();
+}
+#endif

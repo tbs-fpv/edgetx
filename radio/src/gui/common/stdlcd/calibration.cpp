@@ -48,6 +48,7 @@ void menuCommonCalibOptions(event_t event)
   }
 }
 
+#if !defined(RADIO_CALIBRATION_HALL) || defined(SIMU)
 void menuCommonCalib(event_t event)
 {
   // make sure we don't scroll while calibrating
@@ -102,4 +103,4 @@ void menuCommonCalib(event_t event)
 
   doMainScreenGraphics();
 }
-
+#endif

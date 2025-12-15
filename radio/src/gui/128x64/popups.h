@@ -22,7 +22,11 @@
 #pragma once
 
 #define MESSAGEBOX_X                   8
+#if LCD_H > 64
+#define MESSAGEBOX_Y                   25
+#else
 #define MESSAGEBOX_Y                   8
+#endif
 #define MESSAGEBOX_W                   (LCD_W - 15)
 
 #define MENU_X                         MESSAGEBOX_X
@@ -31,6 +35,10 @@
 
 #define WARNING_LINE_LEN               24
 #define WARNING_LINE_X                 12
+#if LCD_H > 64
+#define WARNING_LINE_Y                 4*FH
+#else
 #define WARNING_LINE_Y                 MESSAGEBOX_Y + 2
+#endif
 
 #include "popups_common.h"

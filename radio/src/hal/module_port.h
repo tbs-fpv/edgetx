@@ -45,6 +45,7 @@ enum ModulePort : uint8_t {
   ETX_MOD_PORT_SOFT_INV,  // TX soft-serial 
   ETX_MOD_PORT_SPORT,     // UART on S.Port
   ETX_MOD_PORT_SPORT_INV, // RX soft-serial sampled bit-by-bit via timer IRQ on S.PORT
+  ETX_MOD_PORT_VIRTUAL,
   ETX_MOD_PORT_MAX
 };
 

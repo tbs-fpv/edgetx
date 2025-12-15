@@ -39,6 +39,8 @@ Backup::RamBackupUncompressed ramBackupUncompressed __DMA;
 #if defined(SIMU)
 RamBackup _ramBackup;
 RamBackup * ramBackup = &_ramBackup;
+#elif defined(MANUFACTURER_TBS)
+RamBackup * ramBackup = (RamBackup *)(BKPSRAM_BASE + 0x800);
 #else
 
 #if !defined(BKPSRAM_BASE) && defined(D3_BKPSRAM_BASE)

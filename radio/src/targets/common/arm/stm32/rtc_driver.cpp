@@ -134,3 +134,66 @@ void rtcDisableBackupReg()
   HAL_PWR_DisableBkUpAccess();
 #endif
 }
+
+void rtcSleep(uint32_t seconds)
+{
+  // Save and disable SysTick to prevent 1ms interrupts
+  uint32_t systick_ctrl = SysTick->CTRL;
+  SysTick->CTRL = 0;
+
+  // Unlock RTC write protection
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&rtc);
+
+  // Disable wakeup timer first
+  __HAL_RTC_WAKEUPTIMER_DISABLE(&rtc);
+
+  // Wait for WUTWF flag to be set (wakeup timer write flag)
+  while (!__HAL_RTC_WAKEUPTIMER_GET_FLAG(&rtc, RTC_FLAG_WUTWF));
+
+  // Configure wakeup clock source: ck_spre (1Hz)
+  MODIFY_REG(RTC->CR, RTC_CR_WUCKSEL, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+
+  // Set wakeup counter (seconds - 1, because 0 = 1 second)
+  uint32_t counter = (seconds > 0) ? (seconds - 1) : 0;
+  RTC->WUTR = counter & 0xFFFF;
+
+  // Clear any pending RTC wakeup flag
+  __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&rtc, RTC_FLAG_WUTF);
+
+  // Configure EXTI line 22 for RTC wakeup
+  __HAL_RTC_WAKEUPTIMER_EXTI_CLEAR_FLAG();
+  __HAL_RTC_WAKEUPTIMER_EXTI_ENABLE_IT();
+  __HAL_RTC_WAKEUPTIMER_EXTI_ENABLE_EVENT();
+  __HAL_RTC_WAKEUPTIMER_EXTI_ENABLE_RISING_EDGE();
+
+  // Enable wakeup timer and interrupt
+  __HAL_RTC_WAKEUPTIMER_ENABLE_IT(&rtc, RTC_IT_WUT);
+  __HAL_RTC_WAKEUPTIMER_ENABLE(&rtc);
+
+  // Lock RTC write protection
+  __HAL_RTC_WRITEPROTECTION_ENABLE(&rtc);
+
+  // Loop until RTC wakeup timer expires
+  do {
+    // Enter SLEEP mode (not STOP mode) with WFE
+    SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;  // Clear SLEEPDEEP for sleep mode
+    __DSB();
+    __WFE();
+    __ISB();
+
+    // Check if we woke up due to RTC wakeup timer
+  } while (!__HAL_RTC_WAKEUPTIMER_GET_FLAG(&rtc, RTC_FLAG_WUTF));
+
+  // Clear wakeup flag
+  __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&rtc, RTC_FLAG_WUTF);
+  __HAL_RTC_WAKEUPTIMER_EXTI_CLEAR_FLAG();
+
+  // Disable wakeup timer
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&rtc);
+  __HAL_RTC_WAKEUPTIMER_DISABLE(&rtc);
+  __HAL_RTC_WAKEUPTIMER_DISABLE_IT(&rtc, RTC_IT_WUT);
+  __HAL_RTC_WRITEPROTECTION_ENABLE(&rtc);
+
+  // Restore SysTick
+  SysTick->CTRL = systick_ctrl;
+}

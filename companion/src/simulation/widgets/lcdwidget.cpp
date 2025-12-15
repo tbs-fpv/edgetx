@@ -21,11 +21,12 @@
 
 #include "lcdwidget.h"
 
-void LcdWidget::setData(int width, int height, int depth)
+void LcdWidget::setData(int width, int height, int depth, bool invert)
 {
   lcdWidth = width;
   lcdHeight = height;
   lcdDepth = depth;
+  lcdInvert = invert;
   if (depth >= 8)
     lcdSize = (width * height) * ((depth + 7) / 8);
   else
@@ -141,6 +142,12 @@ void LcdWidget::doPaint(QPainter &p)
       }
       // lcdDepth == 4
       z = (y & 1) ? (localBuf[idx] >> 4) : (localBuf[idx] & 0x0F);
+      if (lcdInvert) {
+        int xx = lcdWidth - x - 1;
+        int yy = lcdHeight - y - 1;
+        idx = yy * (lcdWidth / 2) + (xx / 2);
+        z = (xx & 1) ? (localBuf[idx] & 0x0F) : (localBuf[idx] >> 4);
+      }
       if (!z) continue;
       if (z != previousDepth) {
         previousDepth = z;

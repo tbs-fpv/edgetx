@@ -85,9 +85,15 @@ static void _blit_simu_screen_4bit(void* screen_buffer, Uint32 format, int w, in
 
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-
+#if defined(RADIO_TANGO2)
+      coord_t xx = LCD_W - x - 1;
+      coord_t yy = LCD_H - y - 1;
+      pixel_t * p = &simuLcdBuf[yy * (LCD_W / 2) + (xx / 2)];
+      uint8_t z = (xx & 1) ? (*p & 0x0F) : (*p >> 4);
+#else
       pixel_t p = simuLcdBuf[y / 2 * LCD_W + x];
       uint8_t z = (y & 1) ? (p >> 4) : (p & 0x0F);
+#endif
 
       SDL_Color c = on_color;
       c.a = (uint16_t)z * SDL_ALPHA_OPAQUE / 16;

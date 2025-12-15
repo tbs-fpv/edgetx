@@ -430,7 +430,6 @@ void getADC()
   DEBUG_TIMER_START(debugTimerAdcRead);
   if (!adcRead()) { TRACE("adcRead failed"); }
 #if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
-  #include "mixer_scheduler.h"
   if (isCrossfireStarted() && crossfireSharedData->trampoline.read_sticks)
     crossfireSharedData->trampoline.read_sticks(getMixerSchedulerPeriod(), adcValues);
 #endif

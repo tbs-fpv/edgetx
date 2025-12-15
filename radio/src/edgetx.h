@@ -500,6 +500,13 @@ enum AUDIO_SOUNDS {
   AU_STICK2_MIDDLE,
   AU_STICK3_MIDDLE,
   AU_STICK4_MIDDLE,
+#if defined(USE_ROTARY_TRIMS)
+  AU_AILERON_TRIM,
+  AU_ELEVATOR_TRIM,
+  AU_THROTTLE_TRIM,
+  AU_RUDDER_TRIME,
+  AU_MAIN_MENU,
+#endif
   AU_POT1_MIDDLE,
   AU_POT2_MIDDLE,
 #if defined(PCBX9E)
@@ -871,6 +878,12 @@ enum JackMode {
 
 #if defined(DEBUG_LATENCY)
 extern uint8_t latencyToggleSwitch;
+#endif
+
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+#include "tbs/crsf/crsf_write.h"
+#include "tbs/crsf/crsf_utilities.h"
+#include "tbs/crsf/crossfire.h"
 #endif
 
 #include "module.h"

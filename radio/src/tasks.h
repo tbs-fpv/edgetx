@@ -41,10 +41,20 @@
 #define CLI_STACK_SIZE         1024  // only consumed with CLI build option
 
 #if defined(FREE_RTOS)
-#define MIXER_TASK_PRIO        (tskIDLE_PRIORITY + 4)
-#define AUDIO_TASK_PRIO        (tskIDLE_PRIORITY + 3) // Note: FreeRTOSConfig.h defines software timers as priority 2
-#define MENUS_TASK_PRIO        (tskIDLE_PRIORITY + 1)
-#define CLI_TASK_PRIO          (tskIDLE_PRIORITY + 1)
+  #if defined(TBS_CROSSFIRE_TASK) && !defined (SIMU)
+    #define TBS_RADIO_TASK_PRIO    (tskIDLE_PRIORITY + 4) // used in radios with TBS built-in TX
+    #define MIXER_TASK_PRIO        (tskIDLE_PRIORITY + 3)
+    #define AUDIO_TASK_PRIO        (tskIDLE_PRIORITY + 2)
+    #define TBS_MAIN_TASK_PRIO     (tskIDLE_PRIORITY + 1)
+    #define MENUS_TASK_PRIO        (tskIDLE_PRIORITY + 1)
+    #define CLI_TASK_PRIO          (tskIDLE_PRIORITY + 1)
+    #define TBS_TASK_STACK_SIZE    (1024)
+  #else
+    #define MIXER_TASK_PRIO        (tskIDLE_PRIORITY + 4)
+    #define AUDIO_TASK_PRIO        (tskIDLE_PRIORITY + 3) // Note: FreeRTOSConfig.h defines software timers as priority 2
+    #define MENUS_TASK_PRIO        (tskIDLE_PRIORITY + 1)
+    #define CLI_TASK_PRIO          (tskIDLE_PRIORITY + 1)
+  #endif
 #else
 #define MIXER_TASK_PRIO        (4)
 #define AUDIO_TASK_PRIO        (2)

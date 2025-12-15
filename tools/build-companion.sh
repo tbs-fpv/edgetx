@@ -216,6 +216,7 @@ build_plugin() {
 declare -a simulator_plugins=(
     x9lite x9lites x9d x9dp x9dp2019 x9e
     x7 x7access
+    tango2 mambo
     t8 t12 t12max tx12 tx12mk2 t15 t15pro t16 t18 t20 t20v2
     xlite xlites
     x10 x10express x12s

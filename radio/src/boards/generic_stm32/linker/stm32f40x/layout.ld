@@ -6,7 +6,7 @@ STACK_ADDRESS = ORIGIN(CCM) + LENGTH(CCM); /* end of CCM */
 MAIN_STACK_SIZE = 1024;
 
 /* Maximum bootloader code size */
-BOOTLOADER_SIZE = 0x8000;
+BOOTLOADER_SIZE = DEFINED(__bootloader_size) ? __bootloader_size : 0x8000;
 
 /* Minimum Heap Size (indicative) */
 MIN_HEAP_SIZE = 0;
@@ -18,11 +18,13 @@ HEAP_ADDRESS = ORIGIN(RAM) + LENGTH(RAM);
 MEMORY
 {
   FLASH (rx) :
-      ORIGIN = 0x08000000,
+      ORIGIN = DEFINED(__flash_offset) ? (0x08000000 + __flash_offset) : 0x08000000,
       LENGTH = DEFINED(__flash_size) ? __flash_size : 512K
 
-  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 128K
-  CCM (xrw)       : ORIGIN = 0x10000000, LENGTH = 64K
+  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 84K
+  CCM (xrw)       :
+      ORIGIN = DEFINED(__ccm_offset) ? (0x10000000 + __ccm_offset) : 0x10000000,
+      LENGTH = DEFINED(__ccm_size) ? __ccm_size : 64K
 }
 
 REGION_ALIAS("REGION_BOOTLOADER",   FLASH);

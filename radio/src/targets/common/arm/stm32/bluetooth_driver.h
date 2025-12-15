@@ -42,7 +42,7 @@ void bluetoothDisable();
 
 #if defined(PCBX9LITES) || defined(PCBX7ACCESS)
   #define IS_BLUETOOTH_CHIP_PRESENT()     (true)
-#elif defined(PCBX9LITE)
+#elif defined(PCBX9LITE) || defined(MANUFACTURER_TBS)
   #define IS_BLUETOOTH_CHIP_PRESENT()     (false)
 #elif defined(BLUETOOTH_PROBE) && !defined(SIMU)
   extern volatile uint8_t btChipPresent;

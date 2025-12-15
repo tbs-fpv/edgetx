@@ -29,8 +29,23 @@
 #include "draw_functions.h"
 
 #define MENUS_SCROLLBAR_WIDTH          0
-
+#if LCD_DEPTH == 4
+#define GREY(x)                        ((x) * 0x010000)
+#define GREY_DEFAULT                   GREY(11)
+#define FILL_WHITE                     0x10
+#endif
 #define MIXES_2ND_COLUMN               (10*FW)
+
+#if defined(MANUFACTURER_TBS) && !defined(SIMU)
+typedef enum {
+  MAINSCREEN_GRAPHICS_NONE = 0,
+  MAINSCREEN_GRAPHICS_STICKS = 0x01,
+  MAINSCREEN_GRAPHICS_POTS = 0x02,
+  MAINSCREEN_GRAPHICS_ALL = 0xFF
+} MainScreenGraphicsView;
+void drawDownload();
+void doMainScreenGraphicsCalibration(uint8_t viewMask, int16_t * sticksOverride);
+#endif
 
 void drawWheel(coord_t centrex, int16_t wval);
 void drawThrottle(coord_t centrex, int16_t tval);

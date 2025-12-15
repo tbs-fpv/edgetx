@@ -86,6 +86,18 @@ static void menusTask()
 #endif
     DEBUG_TIMER_STOP(debugTimerPerMain);
 
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+    crsfFifoHandler();
+
+    if (getCrsfFlag(CRSF_FLAG_SHOW_BOOTLOADER_ICON)) {
+      lcdOn();
+      drawDownload();
+      sleep_ms(500);
+      NVIC_SystemReset();
+    }
+#endif
+
+
     sleep_until(&next_tick, MENU_TASK_PERIOD);
     resetForcePowerOffRequest();
   }

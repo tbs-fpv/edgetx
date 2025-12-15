@@ -508,6 +508,13 @@ void audioTimerCountdown(uint8_t timer, int value);
 #define AUDIO_TRAINER_CONNECTED() audioEvent(AU_TRAINER_CONNECTED)
 #define AUDIO_TRAINER_LOST()     audioEvent(AU_TRAINER_LOST)
 #define AUDIO_TRAINER_BACK()     audioEvent(AU_TRAINER_BACK)
+#if defined(USE_ROTARY_TRIMS)
+#define AUDIO_AILERON_TRIM()     audioEvent(AU_AILERON_TRIM)
+#define AUDIO_ELEVATOR_TRIM()    audioEvent(AU_ELEVATOR_TRIM)
+#define AUDIO_THROTTLE_TRIM()    audioEvent(AU_THROTTLE_TRIM)
+#define AUDIO_RUDDER_TRIM()      audioEvent(AU_RUDDER_TRIME)
+#define AUDIO_MAIN_MENU()        audioEvent(AU_MAIN_MENU)
+#endif
 
 #else // AUDIO
 

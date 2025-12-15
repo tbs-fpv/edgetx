@@ -51,6 +51,9 @@
 
 #if !defined(BOOT)
   #include "edgetx.h"
+  #if defined(CHARGING_ANIMATION) && defined(ROTARY_ENCODER_NAVIGATION)
+    #include "hal/rotary_encoder.h"
+  #endif
   #if defined(PXX1)
     #include "pulses/pxx1.h"
   #endif
@@ -178,40 +181,16 @@ void boardInit()
   initCSD203();
 #endif
 
-// If the radio was powered on by dual use USB, halt the boot process, let battery charge
-// TODO: needs refactoring if any other manufacturer implements either of the following:
-// - function switches and the radio supports charging
-// - single USB for data + charge which powers on radio
-#if defined(MANUFACTURER_JUMPER) && !defined(USB_CHARGE_LED)
-  if (usbPlugged()) {
-    adcInit(&_adc_driver);
-    getADC();
-    pwrOn();  // required to get bat adc reads
-    INTERNAL_MODULE_OFF();
-    EXTERNAL_MODULE_OFF();
-    delay_ms(2000); // let this stabilize
-    while (usbPlugged()) {
-      //    // Let it charge ...
-      getADC();  // Warning: the value read does not include VBAT calibration
-      delay_ms(20);
-#if defined(FUNCTION_SWITCHES)
-      // Support for FS Led to indicate battery charge level
-      if (getBatteryVoltage() >= 660) setFSLedON(0);
-      if (getBatteryVoltage() >= 700) setFSLedON(1);
-      if (getBatteryVoltage() >= 740) setFSLedON(2);
-      if (getBatteryVoltage() >= 780) setFSLedON(3);
-      if (getBatteryVoltage() >= 820) setFSLedON(4);
-      if (getBatteryVoltage() >= 842) setFSLedON(5);
-#elif defined(STATUS_LEDS)
-      // Use Status LED to indicate battery charge level instead
-      if (getBatteryVoltage() <= 660) ledRed();         // low discharge
-      else if (getBatteryVoltage() <= 842) ledBlue();   // charging
-      else ledGreen();                                  // charging done
-      delay_ms(1000);
+#if defined(TBS_CROSSFIRE_TASK)
+  crsfInit();
 #endif
-    }
-    pwrOff();
-  }
+
+#if defined(RTCLOCK)
+  rtcInit(); // RTC must be initialized before rambackupRestore() is called
+#endif
+
+#if defined(USB_CHARGER)
+  usbChargerInit();
 #endif
 
   keysInit();
@@ -232,6 +211,111 @@ void boardInit()
 
   if (!adcInit(&_adc_driver))
     TRACE("adcInit failed");
+
+// If the radio was powered on by dual use USB, halt the boot process, let battery charge
+// TODO: needs refactoring if any other manufacturer implements either of the following:
+// - function switches and the radio supports charging
+// - single USB for data + charge which powers on radio
+#if (defined(MANUFACTURER_JUMPER) || defined(MANUFACTURER_TBS)) && !defined(USB_CHARGE_LED)
+  bool skipCharging = false;
+#if defined(TBS_CROSSFIRE_TASK)
+  if (readBackupReg(BKREG_SKIP_BOARD_OFF) ||
+    bkregGetStatusFlag(DEVICE_RESTART_WITHOUT_WARN_FLAG) ||
+    getCrsfFlag(CRSF_FLAG_XF_UPDATE_REQUIRED)) {
+    skipCharging = true;
+#if defined(USB_AGENT)
+    setSelectedUsbMode(USB_AGENT_MODE);
+#endif
+  }
+#endif
+
+  if (usbPlugged() && !skipCharging) {
+    getADC();
+    pwrOn();  // required to get bat adc reads
+    INTERNAL_MODULE_OFF();
+    EXTERNAL_MODULE_OFF();
+    delay_ms(2000); // let this stabilize
+#if defined(CHARGING_ANIMATION)
+    lcdInit();
+    backlightInit();
+    backlightDisable();
+
+    const uint32_t TIMEOUT_MS = 5000;
+    const uint32_t TIMEOUT_TICKS = TIMEOUT_MS * (CPU_FREQ / 1000);
+    uint32_t backlightTimeout = ticksNow() + TIMEOUT_TICKS;
+    bool screenActive = true;
+    uint32_t lastKeyState = readKeys();
+  #if defined(ROTARY_ENCODER_NAVIGATION)
+    rotenc_t lastRotaryValue = rotaryEncoderGetValue();
+  #endif
+#endif
+    while (usbPlugged() && !skipCharging) {
+      //    // Let it charge ...
+      getADC();  // Warning: the value read does not include VBAT calibration
+      delay_ms(20);
+#if defined(FUNCTION_SWITCHES)
+      // Support for FS Led to indicate battery charge level
+      if (getBatteryVoltage() >= 660) setFSLedON(0);
+      if (getBatteryVoltage() >= 700) setFSLedON(1);
+      if (getBatteryVoltage() >= 740) setFSLedON(2);
+      if (getBatteryVoltage() >= 780) setFSLedON(3);
+      if (getBatteryVoltage() >= 820) setFSLedON(4);
+      if (getBatteryVoltage() >= 842) setFSLedON(5);
+#elif defined(STATUS_LEDS)
+      // Use Status LED to indicate battery charge level instead
+  #if defined(RADIO_TANGO2)
+      if (usbChargerLed()) ledRed();
+      else ledGreen();
+  #else
+      if (getBatteryVoltage() <= 660) ledRed();         // low discharge
+      else if (getBatteryVoltage() <= 842) ledBlue();   // charging
+      else ledGreen();                                  // charging done
+  #endif
+  #if defined(MANUFACTURER_TBS)
+      rtcSleep(1);
+      uint32_t ms = 0;
+      while (pwrPressed() && ++ms <= 500) delay_ms(1);
+      skipCharging = (ms > 500);
+  #else
+      delay_ms(1000);
+  #endif
+#elif defined(CHARGING_ANIMATION)
+      uint32_t keys = readKeys();
+      bool changed = (keys != lastKeyState);
+      if (changed) lastKeyState = keys;
+
+  #if defined(ROTARY_ENCODER_NAVIGATION)
+      rotenc_t rotary = rotaryEncoderGetValue();
+      if (rotary != lastRotaryValue) {
+        lastRotaryValue = rotary;
+        changed = true;
+      }
+  #endif
+
+      if (changed) {
+        backlightTimeout = ticksNow() + TIMEOUT_TICKS;
+        screenActive = true;
+      }
+
+      if (screenActive) {
+        if ((int32_t)(ticksNow() - backlightTimeout) >= 0) {
+          lcdClear();
+          backlightDisable();
+          screenActive = false;
+        } else {
+          lcdClear();
+          if (usbChargerLed()) drawChargingState();
+          else drawFullyCharged();
+          lcdRefresh();
+          backlightFullOn();
+        }
+      }
+#endif
+    }
+    if (!skipCharging) pwrOff();
+  }
+#endif
+
 
   lcdInit(); // delaysInit() must be called before
   audioInit();
@@ -260,14 +344,6 @@ void boardInit()
   toplcdInit();
 #endif
 
-#if defined(USB_CHARGER)
-  usbChargerInit();
-#endif
-
-#if defined(RTCLOCK)
-  rtcInit(); // RTC must be initialized before rambackupRestore() is called
-#endif
-
   backlightInit();
 
 #if defined(GUI)
@@ -289,6 +365,10 @@ void boardOff()
 
 #if defined(STATUS_LEDS) && !defined(BOOT)
   ledOff();
+#endif
+
+#if defined(TBS_CROSSFIRE_TASK)
+  crossfirePowerOff();
 #endif
 
   BACKLIGHT_DISABLE();

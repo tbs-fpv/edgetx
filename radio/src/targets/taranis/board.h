@@ -30,23 +30,89 @@
 #include "edgetx_constants.h"
 #include "board_common.h"
 
+#if defined(RADIO_TANGO2)
+#define MY_DEVICE_NAME                  "Tango II"
+enum {
+  PCBREV_Tango2_Unknown = 0,
+  PCBREV_Tango2_V1,
+  PCBREV_Tango2_V2,
+  PCBREV_Tango2_V3,
+};
+
+enum EnumTrimMode{
+  EDIT_TRIM_DISABLED = 0,
+  EDIT_TRIM_1,
+  EDIT_TRIM_2,
+  EDIT_TRIM_3,
+  EDIT_TRIM_4,
+  EDIT_TRIM_MAX = EDIT_TRIM_4,
+};
+
+enum Analogs {
+  STICK1,
+  STICK2,
+  STICK3,
+  STICK4,
+  TX_VOLTAGE,
+  NUM_ANALOGS
+};
+
+// PCBREV driver
+#define IS_PCBREV_01()                  (hardwareOptions.pcbrev == PCBREV_Tango2_V1)
+#define IS_PCBREV_02()                  (hardwareOptions.pcbrev == PCBREV_Tango2_V2)
+#define IS_PCBREV_03()                  (hardwareOptions.pcbrev == PCBREV_Tango2_V3)
+
+#elif defined(RADIO_MAMBO)
+#define MY_DEVICE_NAME                  "Mambo"
+enum {
+  PCBREV_Mambo_Unknown = 0,
+  PCBREV_Mambo_V1,
+  PCBREV_Mambo_V2,
+};
+
+enum Analogs {
+  STICK1,
+  STICK2,
+  STICK3,
+  STICK4,
+  POT_FIRST,
+  POT1 = POT_FIRST,
+  POT2,
+  POT_LAST = POT2,
+  SWITCH_TRIM,
+  SWITCH_A,
+  SWITCH_B,
+  SWITCH_C,
+  SWITCH_D,
+  TX_VOLTAGE,
+  NUM_ANALOGS
+};
+#endif
+
 #if defined(ROTARY_ENCODER_NAVIGATION)
 // Rotary Encoder driver
 void rotaryEncoderInit();
 void rotaryEncoderCheck();
 #endif
 
-#if defined(STM32F413xx) || defined(STM32F407xG)
-#define FLASHSIZE                       0x100000 // 1M
+#if defined(RADIO_TANGO2) || defined(MAMBO)
+  #define FLASHSIZE                       0xC0000
+  #define FLASH_PAGESIZE                  256
+  #define BOOTLOADER_SIZE                 0xC000
+  #define FIRMWARE_ADDRESS                0x08000000
 #else
-#define FLASHSIZE                       0x80000  // 512k
+  #if defined(STM32F413xx) || defined(STM32F407xG)
+  #define FLASHSIZE                       0x100000 // 1M
+  #else
+  #define FLASHSIZE                       0x80000  // 512k
+  #endif
+  #define FLASH_PAGESIZE                  256
+  #define BOOTLOADER_SIZE                 0x8000
+  #define FIRMWARE_ADDRESS                0x08000000
+  #define FIRMWARE_LEN(fsize)             (fsize - BOOTLOADER_SIZE)
+  #define FIRMWARE_MAX_LEN                (FLASHSIZE - BOOTLOADER_SIZE)
+  #define APP_START_ADDRESS               (uint32_t)(FIRMWARE_ADDRESS + BOOTLOADER_SIZE)
 #endif
-#define FLASH_PAGESIZE                  256
-#define BOOTLOADER_SIZE                 0x8000
-#define FIRMWARE_ADDRESS                0x08000000
-#define FIRMWARE_LEN(fsize)             (fsize - BOOTLOADER_SIZE)
-#define FIRMWARE_MAX_LEN                (FLASHSIZE - BOOTLOADER_SIZE)
-#define APP_START_ADDRESS               (uint32_t)(FIRMWARE_ADDRESS + BOOTLOADER_SIZE)
 
 #define LUA_MEM_MAX                     (0)    // max allowed memory usage for complete Lua  (in bytes), 0 means unlimited
 
@@ -76,8 +142,14 @@ enum {
 };
 
 // Pulses driver
-#define INTERNAL_MODULE_ON()   gpio_set(INTMODULE_PWR_GPIO)
-#define INTERNAL_MODULE_OFF()  gpio_clear(INTMODULE_PWR_GPIO)
+#if defined(TBS_CROSSFIRE_TASK)
+  #include "tbs/crsf/crossfire.h"
+  #define INTERNAL_MODULE_OFF()  crossfireTurnOffRf()
+  #define INTERNAL_MODULE_ON()   crossfireTurnOnRf()
+#else
+  #define INTERNAL_MODULE_ON()   gpio_set(INTMODULE_PWR_GPIO)
+  #define INTERNAL_MODULE_OFF()  gpio_clear(INTMODULE_PWR_GPIO)
+#endif
 
 #if (defined(INTERNAL_MODULE_PXX1) || defined(INTERNAL_MODULE_PXX2)) && (!defined(PCBX9LITE) || defined(PCBX9LITES))
   #define HARDWARE_INTERNAL_RAS
@@ -142,6 +214,11 @@ extern HardwareOptions hardwareOptions;
   #define BATTERY_WARN                  32 // 3.5V
   #define BATTERY_MIN                   30 // 3.0V
   #define BATTERY_MAX                   42 // 4.2V
+#elif defined(RADIO_TANGO2) || defined(RADIO_MAMBO)
+  #define BATTERY_WARN                  34 // 3.4V
+  #define BATTERY_CRITICAL              33 // 3.3V
+  #define BATTERY_MIN                   33 // 3.3V
+  #define BATTERY_MAX                   42 // 4.2V
 #else
   // NI-MH 7.2V
   #define BATTERY_WARN                  65 // 6.5V
@@ -151,6 +228,8 @@ extern HardwareOptions hardwareOptions;
 
 #if defined(PCBXLITE)
   #define BATT_SCALE                    131
+#elif defined(RADIO_TANGO2) || defined(RADIO_MAMBO)
+  //no scale
 #elif defined(PCBX7)
   #define BATT_SCALE                    123
 #elif defined(PCBX9LITE)
@@ -178,10 +257,11 @@ void pwrOff();
 bool pwrPressed();
 bool pwrOffPressed();
 void pwrResetHandler();
+uint32_t pwrPressedDuration();
 #define pwrForcePressed()   false
 
 // Backlight driver
-#if defined(OLED_SCREEN)
+#if defined(OLED_SCREEN) && !defined(RADIO_TANGO2)
 #define BACKLIGHT_DISABLE()             lcdSetRefVolt(0)
 #define BACKLIGHT_FORCED_ON             255
 #else
@@ -239,6 +319,25 @@ const etx_serial_port_t* auxSerialGetPort(int port_nr);
 #if defined(USB_CHARGER)
 void usbChargerInit();
 bool usbChargerLed();
+#if defined(RADIO_TANGO2)
+  #define IS_CHARGING_STATE()         (usbPlugged() && !gpio_read(CHARGER_STATE_GPIO))
+  #define IS_CHARGING_FAULT()         (usbPlugged() && !gpio_read(CHARGER_FAULT_GPIO))
+#elif defined(RADIO_MAMBO)
+  #define IS_CHARGING_STATE()         !gpio_read(CHARGER_STATE_GPIO)
+  #define IS_CHARGING_FAULT()         (0)
+#endif
+#endif
+
+#if defined(RADIO_TANGO2) || defined(RADIO_MAMBO)
+// ESP driver
+#define WIFI_IS_ON()                    gpio_read(ESP_EN_GPIO)
+#define WIFI_OFF()                      gpio_clear(ESP_EN_GPIO)
+
+void usbAgentUpdate(void);
+#endif
+
+#if defined(RADIO_TANGO2) || defined(RADIO_MAMBO)
+void usbAgentUpdate(void);
 #endif
 
 #if defined(RADIO_V14) || defined(RADIO_V12)
@@ -251,6 +350,7 @@ void ledOff();
 void ledRed();
 void ledGreen();
 void ledBlue();
+void ledWhite();
 
 // LCD driver
 #if defined(PCBX9D) || defined(PCBX9DP) || defined(PCBX9E)
@@ -260,6 +360,24 @@ void ledBlue();
 #define LCD_CONTRAST_MIN                0
 #define LCD_CONTRAST_MAX                45
 #define LCD_CONTRAST_DEFAULT            25
+#elif defined(RADIO_TANGO2)
+#define LCD_W                           128
+#define LCD_H                           96
+#define LCD_DEPTH                       4
+#define LCD_CONTRAST_MIN                0
+#define LCD_CONTRAST_MAX                255
+#define LCD_CONTRAST_DEFAULT            20
+void lcdOn();
+bool isLcdOn();
+void lcdAdjustContrast(uint8_t val);
+#elif defined(RADIO_MAMBO)
+#define LCD_W                           128
+#define LCD_H                           64
+#define LCD_DEPTH                       1
+#define LCD_CONTRAST_MIN                0
+#define LCD_CONTRAST_MAX                255
+#define LCD_CONTRAST_DEFAULT            159
+#define lcdOn()
 #else
 #define LCD_W                           128
 #define LCD_H                           64
@@ -310,7 +428,7 @@ void lcdRefreshWait();
 #else
 #define lcdRefreshWait()
 #endif
-#if defined(PCBX9D) || defined(SIMU) || !defined(__cplusplus)
+#if defined(PCBX9D) || defined(RADIO_TANGO2) || defined(SIMU) || !defined(__cplusplus)
 void lcdRefresh();
 #else
 void lcdRefresh(bool wait=true); // TODO uint8_t wait to simplify this
@@ -364,6 +482,10 @@ void setTopBatteryValue(uint32_t volts);
     #define BATTERY_DIVIDER 50000
   #elif defined (RADIO_LR3PRO)
     #define BATTERY_DIVIDER 39500
+#elif defined(RADIO_TANGO2)
+  #define BATTERY_DIVIDER (IS_PCBREV_01() ? 4446 : 4326)
+#elif defined(RADIO_MAMBO)
+  #define BATTERY_DIVIDER 4783
   #else
     #define BATTERY_DIVIDER 26214
   #endif

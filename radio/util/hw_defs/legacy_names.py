@@ -555,7 +555,8 @@ LEGACY_NAMES = [
             "tx12", "tx12mk2",
             "x7", "x7access",
             "xlite", "xlites",
-            "zorro"
+            "zorro",
+            "mambo"
         },
         "inputs": {
             "LH": {
@@ -652,6 +653,23 @@ LEGACY_NAMES = [
                 "short_label": "R",
                 "description": "Right slider"
             },
+        }
+    },
+    {
+        "targets": {"tango2"},
+        "inputs": {
+            "LH": {
+                "yaml": "Rud"
+            },
+            "LV": {
+                "yaml": "Ele"
+            },
+            "RV": {
+                "yaml": "Thr"
+            },
+            "RH": {
+                "yaml": "Ail"
+            }
         }
     },
     {

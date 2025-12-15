@@ -95,7 +95,11 @@ bool MultiFirmwareUpdateDriver::init()
     // TX on PPM (inverted softserial)
     etx_serial_init params(serialInitParams);
     params.direction = ETX_Dir_TX;
+#if defined(RADIO_TANGO2)
+    params.polarity = ETX_Pol_Normal;
+#else
     params.polarity = ETX_Pol_Inverted;
+#endif
     mod_st = modulePortInitSerial(EXTERNAL_MODULE, ETX_MOD_PORT_UART, &params, true);
     if (!mod_st) return false;
 

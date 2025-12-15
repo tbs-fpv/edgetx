@@ -267,7 +267,7 @@ uint8_t getModuleType(uint8_t module)
 {
   uint8_t type = g_model.moduleData[module].type;
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   if (module == INTERNAL_MODULE && isInternalModuleAvailable(type)) {
     return type;
   }

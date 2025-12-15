@@ -47,6 +47,8 @@ namespace Board {
     BOARD_UNKNOWN = -1,
     BOARD_TARANIS_X7,
     BOARD_TARANIS_X7_ACCESS,
+    BOARD_TBS_TANGO2,
+    BOARD_TBS_MAMBO,
     BOARD_TARANIS_X9D,
     BOARD_TARANIS_X9DP,
     BOARD_TARANIS_X9DP_2019,
@@ -238,6 +240,7 @@ namespace Board {
     LcdDepth,
     LcdHeight,
     LcdWidth,
+    LcdRevert,
     MaxAnalogs,
     Inputs,
     InputSwitches,
@@ -735,6 +738,16 @@ inline bool IS_TARANIS_X7_ACCESS(Board::Type board)
   return board == Board::BOARD_TARANIS_X7_ACCESS;
 }
 
+inline bool IS_TBS_TANGO2(Board::Type board)
+{
+  return board == Board::BOARD_TBS_TANGO2;
+}
+
+inline bool IS_TBS_MAMBO(Board::Type board)
+{
+  return board == Board::BOARD_TBS_MAMBO;
+}
+
 inline bool IS_TARANIS_X9LITE(Board::Type board)
 {
   return board == Board::BOARD_TARANIS_X9LITE || board == Board::BOARD_TARANIS_X9LITES;
@@ -767,7 +780,7 @@ inline bool IS_TARANIS_X9E(Board::Type board)
 
 inline bool IS_TARANIS_SMALL(Board::Type board)
 {
-  return IS_TARANIS_X7(board) || IS_TARANIS_XLITE(board) || IS_TARANIS_X9LITE(board) || IS_FAMILY_T12(board);
+  return IS_TARANIS_X7(board) || IS_TARANIS_XLITE(board) || IS_TARANIS_X9LITE(board) || IS_FAMILY_T12(board) || IS_TBS_TANGO2(board) || IS_TBS_MAMBO(board);
 }
 
 inline bool IS_TARANIS(Board::Type board)

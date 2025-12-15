@@ -297,6 +297,11 @@ uint32_t readTrims()
     }
   }
 
+#if defined(USE_ROTARY_TRIMS)
+  trims = getRotaryTrimState();
+  setRotaryTrimState(0);
+#endif
+
   return trims;
 }
 

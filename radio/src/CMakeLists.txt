@@ -1,7 +1,7 @@
 include(CMakeForceCompiler)
 include(Bitmaps)
 
-set(PCB_TYPES X9LITE X9LITES X7 XLITE XLITES X9D X9D+ X9E X10 X12S PL18 T15PRO ST16 PA01 TX15 TX16SMK3)
+set(PCB_TYPES X9LITE X9LITES X7 XLITE XLITES X9D X9D+ X9E X10 X12S PL18 T15PRO ST16 PA01 TX15 TX16SMK3 TANGO2 MAMBO)
 set(RADIO_LANGUAGES CN CZ DA DE EN ES FI FR HE HU IT JP KO NL PL PT RU SE SK TW UA)
 set(TTS_LANGUAGES CN CZ DA DE EN ES FI FR HE HU IT JP KO NL PL PT RU SE SK TW UA)
 
@@ -665,6 +665,13 @@ if(NANO)
   target_link_options(firmware PRIVATE
     --specs=nano.specs
   )
+
+if (DEFINED TARGET_FLASH_OFFSET)
+  # message("TARGET_FLASH_OFFSET = ${TARGET_FLASH_OFFSET}")
+  target_link_options(firmware PRIVATE
+    -Wl,--defsym=__flash_offset=${TARGET_FLASH_OFFSET}
+  )
+endif()
 endif()
 
 if (DEFINED TARGET_FLASH_SIZE)
@@ -683,6 +690,27 @@ endif()
 if (DEFINED TARGET_EXTRAM_SIZE)
   target_link_options(firmware PRIVATE
     -Wl,--defsym=__EXTRAM_SIZE__=${TARGET_EXTRAM_SIZE}
+  )
+endif()
+
+if (DEFINED TARGET_CCM_OFFSET)
+  message("TARGET_CCM_OFFSET = ${TARGET_CCM_OFFSET}")
+  target_link_options(firmware PRIVATE
+    -Wl,--defsym=__ccm_offset=${TARGET_CCM_OFFSET}
+  )
+endif()
+
+if (DEFINED TARGET_CCM_SIZE)
+  message("TARGET_CCM_SIZE = ${TARGET_CCM_SIZE}")
+  target_link_options(firmware PRIVATE
+    -Wl,--defsym=__ccm_size=${TARGET_CCM_SIZE}
+  )
+endif()
+
+if (DEFINED TARGET_BOOTLOADER_SIZE)
+  message("TARGET_BOOTLOADER_SIZE = ${TARGET_BOOTLOADER_SIZE}")
+  target_link_options(firmware PRIVATE
+    -Wl,--defsym=__bootloader_size=${TARGET_BOOTLOADER_SIZE}
   )
 endif()
 

@@ -853,7 +853,7 @@ bool isModuleUsingSport(uint8_t moduleBay, uint8_t moduleType)
 #endif
 
     case MODULE_TYPE_CROSSFIRE:
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined(SOFTWARE_INTERNAL_MODULE)
       if (moduleBay == INTERNAL_MODULE)
         return false;
 #endif
@@ -871,7 +871,7 @@ bool areModulesConflicting(int intModuleType, int extModuleType)
   return false;
 }
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined(SOFTWARE_INTERNAL_MODULE)
 bool isInternalModuleSupported(int moduleType)
 {
   switch(moduleType) {
@@ -1020,7 +1020,7 @@ bool isExternalModuleAvailable(int moduleType)
     return false;
 #endif
 
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   if (areModulesConflicting(g_model.moduleData[INTERNAL_MODULE].type, moduleType))
     return false;
 

@@ -1,3 +1,9 @@
+if(RADIO_CALIBRATION_HALL)
+  set(RADIO_CALIBRATION_SRC radio_calibration_hall.cpp)
+else()
+  set(RADIO_CALIBRATION_SRC radio_calibration.cpp)
+endif()
+
 set(GUI_SRC
   ${GUI_SRC}
   lcd.cpp
@@ -14,7 +20,7 @@ set(GUI_SRC
   model_telemetry.cpp
   model_telemetry_sensor.cpp
   radio_setup.cpp
-  radio_calibration.cpp
+  ${RADIO_CALIBRATION_SRC}
   view_main.cpp
   view_statistics.cpp
 )

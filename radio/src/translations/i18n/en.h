@@ -597,6 +597,23 @@
 #define TR_CALIB_DONE                  "Calibration completed"
 #define TR_MENUTOSTART                 TR_ENTER " TO START"
 #define TR_MENUWHENDONE                TR_ENTER " WHEN DONE"
+#if defined(MANUFACTURER_TBS)
+  #define TR_MOVESTICK_P0              "HOLD STICKS AT CENTER"
+  #define TR_MOVESTICK_P1              "HOLD AT MIDDLE RIGHT"
+  #define TR_MOVESTICK_P2              "HOLD AT TOP RIGHT"
+  #define TR_MOVESTICK_P3              "HOLD AT TOP MIDDLE"
+  #define TR_MOVESTICK_P4              "HOLD AT TOP LEFT"
+  #define TR_MOVESTICK_P5              "HOLD AT MIDDLE LEFT"
+  #define TR_MOVESTICK_P6              "HOLD AT BOTTOM LEFT"
+  #define TR_MOVESTICK_P7              "HOLD AT BOTTOM MIDDLE"
+  #define TR_MOVESTICK_P8              "HOLD AT BOTTOM RIGHT"
+  #define TR_CAL_POINTS                "CALCULATING CONSTANTS"
+  #define TR_RELEASE_STICK             "RELEASE STICKS"
+  #define TR_MOVE_PLUS                 "MOVE IN \"+\" PATTERN"
+  #define TR_CENTER_STICK              "CENTER STICKS"
+  #define TR_UPDATE_CROSSFIRE          "Update Crossfire"
+  #define TR_HW_REV                    "HW Rev"
+#endif
 #define TR_AXISDIR                     "AXIS DIR"
 #define TR_MENUAXISDIR                 "[ENTER LONG] " TR_AXISDIR
 #define TR_SETMIDPOINT                 TR_BW_COL(TR_SFC_AIR("SET POTS MIDPOINT", TR("SET AXIS MIDPOINT", "CENTER AXIS/SLIDERS")), "CENTER AXIS/SLIDERS")
@@ -662,8 +679,8 @@
 #define TR_MONITOR_CHANNELS            "CHANNELS %d-%d"
 #define TR_MONITOR_OUTPUT_DESC         "Outputs"
 #define TR_MONITOR_MIXER_DESC          "Mixers"
-  #define TR_RECEIVER_NUM              TR("RxNum", "Receiver No.")
-  #define TR_RECEIVER                  "Receiver"
+#define TR_RECEIVER_NUM                TR("RxNum", "Receiver No.")
+#define TR_RECEIVER                    "Receiver"
 #define TR_MULTI_RFTUNE                TR("Freq tune", "RF Freq. fine tune")
 #define TR_MULTI_RFPOWER               "RF power"
 #define TR_MULTI_WBUS                  "Output"
@@ -992,6 +1009,9 @@
 #define TR_STATISTICS                  "Statistics"
 #define TR_ABOUT_US                    "About"
 #define TR_USB_JOYSTICK                "USB Joystick (HID)"
+#if defined(USB_AGENT)
+#define TR_USB_AGENT                   "USB Agent (HID)"
+#endif
 #define TR_USB_MASS_STORAGE            "USB Storage (SD)"
 #define TR_USB_SERIAL                  "USB Serial (VCP)"
 #define TR_SETUP_SCREENS               "Setup screens"

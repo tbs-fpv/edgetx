@@ -260,6 +260,12 @@ POT_CONFIG = {
         "SL1": {"default": "SLIDER"},
         "SL2": {"default": "SLIDER"},
     },
+    "tango2": {
+    },
+    "mambo": {
+        "P1": { "default": "POT"},
+        "P2": { "default": "POT"}
+    },
     "pa01": {
         "SL1": {"default": "SLIDER"},
         "SL2": {"default": "SLIDER"},

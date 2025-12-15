@@ -35,10 +35,273 @@
   #include "edgetx.h"
 #endif
 
+#define WAIT_FOR_DMA_END()             do { } while (lcd_busy)
+
+#if defined(RADIO_TANGO2)
+#define LCD_NCS_HIGH()  gpio_set(LCD_NCS_GPIO)
+#define LCD_NCS_LOW()   gpio_clear(LCD_NCS_GPIO)
+
+#define LCD_A0_HIGH()   gpio_set(LCD_A0_GPIO)
+#define LCD_A0_LOW()    gpio_clear(LCD_A0_GPIO)
+
+#define LCD_RST_HIGH()  gpio_set(LCD_RST_GPIO)
+#define LCD_RST_LOW()   gpio_clear(LCD_RST_GPIO)
+
+#define SPI_TIMEOUT     10000000UL
+
+static volatile bool lcd_busy = false;
+static bool lcd_on = false;
+
+static void spiWrite(uint8_t byte)
+{
+  LCD_A0_LOW();
+  LCD_NCS_LOW();
+
+  uint32_t timeout = 0;
+  while ((LCD_SPI->SR & SPI_SR_TXE) == 0 && timeout++ < SPI_TIMEOUT);
+  if (timeout >= SPI_TIMEOUT) {
+    LCD_NCS_HIGH();
+    return;
+  }
+
+
+  (void)LCD_SPI->DR;  // Clear receive
+  LCD_SPI->DR = byte;
+
+  timeout = 0;
+  while ((LCD_SPI->SR & SPI_SR_RXNE) == 0 && timeout++ < SPI_TIMEOUT);
+  LCD_NCS_HIGH();
+}
+
+void spiWriteCommand(uint8_t command)
+{
+  spiWrite(command);
+}
+
+void spiWriteCommandWithArg(uint8_t command, uint8_t arg)
+{
+  spiWriteCommand(command);
+  spiWrite(arg);
+}
+
+void lcdHardwareInit()
+{
+  stm32_spi_enable_clock(LCD_SPI);
+
+  gpio_init_af(LCD_MOSI_GPIO, LCD_GPIO_AF, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(LCD_CLK_GPIO, LCD_GPIO_AF, GPIO_PIN_SPEED_HIGH);
+
+  // APB1 clock / 4 = 10.5MHz
+  LCD_SPI->CR1 = 0; // Clear any mode error
+  LCD_SPI->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_CPOL | SPI_CR1_CPHA | SPI_CR1_BR_0;
+  LCD_SPI->CR2 = 0;
+  LCD_SPI->CR1 |= SPI_CR1_MSTR;  // Make sure in case SSM/SSI needed to be set first
+  LCD_SPI->CR1 |= SPI_CR1_SPE;
+
+  gpio_init(LCD_NCS_GPIO, GPIO_OUT, GPIO_PIN_SPEED_HIGH);
+  LCD_NCS_HIGH();
+
+  gpio_init(LCD_RST_GPIO, GPIO_OUT, GPIO_PIN_SPEED_HIGH);
+  gpio_init(LCD_A0_GPIO, GPIO_OUT, GPIO_PIN_SPEED_HIGH);
+
+  stm32_dma_enable_clock(LCD_DMA);
+  LCD_DMA_Stream->CR &= ~DMA_SxCR_EN; // Disable DMA
+  LCD_DMA->HIFCR = LCD_DMA_FLAGS; // Write ones to clear bits
+  LCD_DMA_Stream->CR =  DMA_SxCR_PL_0 | DMA_SxCR_MINC | DMA_SxCR_DIR_0;
+  LCD_DMA_Stream->PAR = (uint32_t)&LCD_SPI->DR;
+  LCD_DMA_Stream->M0AR = (uint32_t)displayBuf;
+  LCD_DMA_Stream->NDTR = DISPLAY_BUFFER_SIZE;
+  LCD_DMA_Stream->FCR = 0x05; // DMA_SxFCR_DMDIS | DMA_SxFCR_FTH_0;
+
+  NVIC_SetPriority(LCD_DMA_Stream_IRQn, 7);
+  NVIC_EnableIRQ(LCD_DMA_Stream_IRQn);
+}
+
+
+extern "C" void LCD_DMA_Stream_IRQHandler()
+{
+  DEBUG_INTERRUPT(INT_LCD);
+
+  LCD_DMA_Stream->CR &= ~DMA_SxCR_TCIE; // Stop interrupt
+  LCD_DMA->HIFCR |= LCD_DMA_FLAG_INT; // Clear interrupt flag
+  LCD_SPI->CR2 &= ~SPI_CR2_TXDMAEN;
+  LCD_DMA_Stream->CR &= ~DMA_SxCR_EN; // Disable DMA
+
+  while (LCD_SPI->SR & SPI_SR_BSY) {
+    /* Wait for SPI to finish sending data
+    The DMA TX End interrupt comes two bytes before the end of SPI transmission,
+    therefore we have to wait here.
+    */
+  }
+
+  LCD_A0_LOW(); // command write
+  spiWrite(0xAF);
+  LCD_NCS_HIGH();
+
+  lcd_busy = false;
+}
+
+/*
+  Get the display On/Off status
+*/
+bool isLcdOn()
+{
+  return lcd_on;
+}
+
+/*
+  Turn on the display
+*/
+void lcdOn()
+{
+  if(!lcd_on)
+  {
+    LCD_NCS_LOW();
+    LCD_A0_LOW();
+    spiWriteCommandWithArg(0x0fd, 0x012);
+    spiWriteCommand(0xAF); // LCD on
+    LCD_NCS_HIGH();
+    lcd_on = true;
+  }
+}
+
+/*
+  Proper method for turning of LCD module. It must be used,
+  otherwise we might damage LCD crystals in the long run!
+*/
+void lcdOff()
+{
+  if(lcd_on)
+  {
+    WAIT_FOR_DMA_END();
+
+    /*
+    LCD Sleep mode is also good for draining capacitors and enables us
+    to re-init LCD without any delay
+    */
+    LCD_NCS_LOW();
+    LCD_A0_LOW();
+    spiWriteCommandWithArg(0x0fd, 0x012);
+    spiWriteCommand(0xAE); // LCD sleep
+    delay_ms(3); // Wait for caps to drain
+    LCD_NCS_HIGH();
+    lcd_on = false;
+  }
+}
+
+/*
+  Starts LCD initialization routine. It should be called as
+  soon as possible after the reset because LCD takes a lot of
+  time to properly power-on.
+  Make sure that delay_ms() is functional before calling this function!
+*/
+void lcdSetRefVolt(uint8_t val) {}
+
+/*
+  Adjust the contrast of the screen.
+*/
+void lcdAdjustContrast(uint8_t val)
+{
+  LCD_NCS_LOW();
+  LCD_A0_LOW();
+  spiWriteCommandWithArg(0x081, val);
+  LCD_NCS_HIGH();
+}
+
+void lcdDisplayInit(void)
+{
+  LCD_NCS_LOW();
+  LCD_A0_LOW();
+
+  // command write
+  spiWriteCommandWithArg(0x0fd, 0x012);       /* unlock display, usually not required because the display is unlocked after reset */
+  spiWriteCommand(0x0ae);                     /* display off */
+  spiWriteCommandWithArg(0x0a8, 0x07f);       /* multiplex ratio: 0x05f * 1/128duty */
+  spiWriteCommandWithArg(0x0a1, 0x000);       /* display start line */
+  spiWriteCommandWithArg(0x0a2, 0x000);       /* display offset, shift mapping ram counter */
+  spiWriteCommandWithArg(0x0a0, 0x052);       /* remap configuration */
+  spiWriteCommandWithArg(0x0ab, 0x001);       /* Enable internal VDD regulator (RESET) */
+  spiWriteCommandWithArg(0x081, 0x80);        /* contrast, brightness, 0..255 */
+  spiWriteCommandWithArg(0x0b1, 0x051);       /* phase length */
+  spiWriteCommandWithArg(0x0b3, 0x001);       /* set display clock divide ratio/oscillator frequency  */
+  spiWriteCommand(0x0b9);                     /* use linear lookup table */
+  spiWriteCommandWithArg(0x0bc, 0x008);       /* pre-charge voltage level */
+  spiWriteCommandWithArg(0x0be, 0x007);       /* VCOMH voltage */
+  spiWriteCommandWithArg(0x0b6, 0x001);       /* second precharge */
+  spiWriteCommandWithArg(0x0d5, 0x062);       /* enable second precharge, internal vsl (bit0 = 0) */
+
+  spiWriteCommand(0x0a4);                     /* normal display mode */
+
+  LCD_NCS_HIGH();
+  lcd_on = true;
+}
+
+void lcdReset()
+{
+  TRACE("LCD reset\r\n");
+  LCD_RST_HIGH();
+  delay_ms(50);
+  LCD_RST_LOW(); // module reset
+  delay_ms(50);
+  LCD_RST_HIGH();
+  delay_ms(50);
+}
+
+void lcdInit(void)
+{
+  lcdHardwareInit();
+  lcdReset();
+  lcdDisplayInit(); // panel configure
+}
+
+void lcdRefreshWait()
+{
+  if(lcd_on)
+    WAIT_FOR_DMA_END();
+}
+
+void lcdRefresh()
+{
+  if(!lcd_on)
+    return;
+
+  LCD_NCS_LOW();
+  LCD_A0_LOW(); // command write
+
+  spiWriteCommand(0x75);
+  spiWrite(0);
+  spiWrite(LCD_H - 1);
+
+  spiWriteCommand(0x15);  // set column address
+  spiWrite(0);
+  spiWrite((LCD_W / 2) - 1);
+
+  LCD_A0_HIGH(); // data write
+  LCD_NCS_LOW();
+
+  lcd_busy = true;
+  LCD_DMA_Stream->CR &= ~DMA_SxCR_EN; // Disable DMA
+  LCD_DMA->HIFCR = LCD_DMA_FLAGS; // Write ones to clear bits
+  LCD_DMA_Stream->M0AR = (uint32_t)displayBuf;
+  LCD_DMA_Stream->NDTR = DISPLAY_BUFFER_SIZE;
+  LCD_DMA_Stream->CR |= DMA_SxCR_EN | DMA_SxCR_TCIE; // Enable DMA & TC interrupts
+  LCD_SPI->CR2 |= SPI_CR2_TXDMAEN;
+
+  WAIT_FOR_DMA_END();
+}
+
+void lcdSetInvert(bool invert)
+{
+  spiWriteCommand(invert ? 0xA7 : 0xA4);
+}
+#else
+
 #if defined(OLED_SCREEN)
   #define LCD_CONTRAST_OFFSET            0
 #elif defined(RADIO_FAMILY_JUMPER_T12) || defined(MANUFACTURER_RADIOMASTER) || defined(RADIO_COMMANDO8) || defined(RADIO_TPRO) || defined(RADIO_T12MAX) || defined(RADIO_V12) || defined(RADIO_V14)
   #define LCD_CONTRAST_OFFSET            -10
+#elif defined(RADIO_MAMBO)
+  #define LCD_CONTRAST_OFFSET            127
 #else
   #define LCD_CONTRAST_OFFSET            160
 #endif
@@ -203,7 +466,24 @@ void lcdStart()
     lcdWriteCommand(0x81);  // Set contrast
     lcdWriteCommand(0x1F);  // Set Vop
     lcdWriteCommand(0xa6);  // Set display mode
-  #else  
+  #elif defined(RADIO_MAMBO)
+    lcdWriteCommand(0xAE);  // Display OFF
+    lcdWriteCommand(0xA2);  // 1/64 Duty 1/9 Bias
+    lcdWriteCommand(0xA0);  // ADC select S0->S131(S1-S128)
+    lcdWriteCommand(0xC8);  // com1 --> com64
+    lcdWriteCommand(0x24);  // Rb/Ra
+    lcdWriteCommand(0x81);  // Sets V0
+    lcdWriteCommand(0x1F);  // EV of V0, range0x00-0x3f
+    lcdWriteCommand(0x24);  // Ratio of V0, range0x20-0x27
+    lcdWriteCommand(0x2F);  // voltage follower ON  regulator ON  booster ON
+    lcdWriteCommand(0xA6);  // Normal Display (not reverse display)
+    lcdWriteCommand(0xA4);  // Entire Display Disable
+    lcdWriteCommand(0x40);  // Set Display Start Line = com0
+    lcdWriteCommand(0xB0);  // Set Page Address = 0
+    lcdWriteCommand(0x10);  // Set Column Address 4 higher bits = 0
+    lcdWriteCommand(0x01);  // Set Column Address 4 lower bits = 1 , from IC SEG1 -> SEG128
+    lcdWriteCommand(0xAF);  // Display ON
+  #else
     lcdWriteCommand(0xe2); // (14) Soft reset
     lcdWriteCommand(0xa1); // Set seg
     lcdWriteCommand(0xc0); // Set com
@@ -293,10 +573,15 @@ void lcdRefresh(bool wait)
     lcdPageSet(y);
     lcdColumnSet(0);
 #else
-    lcdWriteCommand(0x10); // Column addr 0
+    lcdWriteCommand(0x10); // Column addr 0f
+#if defined(RADIO_MAMBO)
+    lcdWriteCommand(0x00);
+    lcdWriteCommand(0xB0 | y);
+#else
     lcdWriteCommand(0xB0 | y); // Page addr y
 #if !defined(LCD_VERTICAL_INVERT)
     lcdWriteCommand(0x04);
+#endif
 #endif
 #endif
 
@@ -456,6 +741,11 @@ void lcdSetRefVolt(uint8_t val)
 #if defined(RADIO_V12) || defined(RADIO_V14)
   lcdWriteCommand(0x81);                      // Set Vop
   lcdWriteCommand(val+LCD_CONTRAST_OFFSET+20);// 0-255
+#elif defined(RADIO_MAMBO)
+  uint16_t setVal = val + LCD_CONTRAST_OFFSET;
+  lcdWriteCommand(0x81); // Set Vop
+  lcdWriteCommand(setVal & 0x3F); // the lower 6 bits for EV
+  lcdWriteCommand(0x20 | (setVal >> 6)); // and the higher 3 bits for ratio
 #else
   lcdWriteCommand(0x81); // Set Vop
   lcdWriteCommand(val+LCD_CONTRAST_OFFSET); // 0-255
@@ -467,4 +757,6 @@ void lcdSetInvert(bool invert)
 {
    lcdWriteCommand(invert ? 0xA7 : 0xA6);
 }
+#endif
+
 #endif

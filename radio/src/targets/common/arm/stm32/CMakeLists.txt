@@ -39,30 +39,33 @@ if(NOT NATIVE_BUILD)
     ${STM32USB_DIR}/Class/HID/Inc
     ${STM32USB_DIR}/Class/MSC/Inc)
 
-  target_include_directories(board_bl PRIVATE
-    ${STM32USB_DIR}/Core/Inc
-    ${STM32USB_DIR}/Class/DFU/Inc)
-
   set(FIRMWARE_SRC ${FIRMWARE_SRC} $<TARGET_OBJECTS:stm32usb>)
-  set(BOOTLOADER_SRC ${BOOTLOADER_SRC} $<TARGET_OBJECTS:stm32usb>)
 
-  # Bootloader USB devices
-  add_library(stm32usb_device_bl OBJECT EXCLUDE_FROM_ALL    
-    ${STM32_DRIVER_DIR}/usbd_conf.c
-    ${STM32_DRIVER_DIR}/usbd_desc.c
-    ${STM32_DRIVER_DIR}/usbd_storage_msd.cpp
-    ${STM32_DRIVER_DIR}/usb_driver.cpp
-  )
+  if(NOT PCBREV STREQUAL TANGO2 AND NOT PCBREV STREQUAL MAMBO)
+    target_include_directories(board_bl PRIVATE
+      ${STM32USB_DIR}/Core/Inc
+      ${STM32USB_DIR}/Class/DFU/Inc)
 
-  target_compile_options(stm32usb_device_bl PRIVATE -DBOOT)
-  target_include_directories(stm32usb_device_bl PRIVATE
-    ${STM32USB_DIR}/Core/Inc
-    ${STM32USB_DIR}/Class/CDC/Inc
-    ${STM32USB_DIR}/Class/DFU/Inc
-    ${STM32USB_DIR}/Class/HID/Inc
-    ${STM32USB_DIR}/Class/MSC/Inc)
+    set(BOOTLOADER_SRC ${BOOTLOADER_SRC} $<TARGET_OBJECTS:stm32usb>)
 
-  set(BOOTLOADER_SRC ${BOOTLOADER_SRC} $<TARGET_OBJECTS:stm32usb_device_bl>)
+    # Bootloader USB devices
+    add_library(stm32usb_device_bl OBJECT EXCLUDE_FROM_ALL
+      ${STM32_DRIVER_DIR}/usbd_conf.c
+      ${STM32_DRIVER_DIR}/usbd_desc.c
+      ${STM32_DRIVER_DIR}/usbd_storage_msd.cpp
+      ${STM32_DRIVER_DIR}/usb_driver.cpp
+    )
+
+    target_compile_options(stm32usb_device_bl PRIVATE -DBOOT)
+    target_include_directories(stm32usb_device_bl PRIVATE
+      ${STM32USB_DIR}/Core/Inc
+      ${STM32USB_DIR}/Class/CDC/Inc
+      ${STM32USB_DIR}/Class/DFU/Inc
+      ${STM32USB_DIR}/Class/HID/Inc
+      ${STM32USB_DIR}/Class/MSC/Inc)
+
+    set(BOOTLOADER_SRC ${BOOTLOADER_SRC} $<TARGET_OBJECTS:stm32usb_device_bl>)
+  endif()
 
   # Firmware USB devices
   add_library(stm32usb_device_fw OBJECT EXCLUDE_FROM_ALL

@@ -50,6 +50,10 @@ extern uint32_t SystemCoreClock;
 #define configGENERATE_RUN_TIME_STATS   0
 #define configUSE_TIMERS                1
 
+#if defined(TBS_CROSSFIRE_TASK) && !defined(SIMU)
+#define configTASK_NOTIFICATION_ARRAY_ENTRIES    8
+#endif
+
 #if !defined(DEBUG)
   #define configMAX_TASK_NAME_LEN         4
   #define configUSE_TRACE_FACILITY        0

@@ -106,6 +106,11 @@ class ADCInputParser:
             'suffix': 'LUX',
         },
         {
+            'type': 'TRIMS',
+            'name': 'TRIMS',
+            'suffix': 'TRIMS',
+        },
+        {
             'range': AZ_seq(),
             'type': ADCInput.TYPE_SWITCH,
             'suffix': 'SW{}',

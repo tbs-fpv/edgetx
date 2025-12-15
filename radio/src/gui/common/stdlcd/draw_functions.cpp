@@ -339,7 +339,7 @@ void drawReceiverName(coord_t x, coord_t y, uint8_t moduleIdx, uint8_t receiverI
     else
       lcdDrawText(x, y, "---", flags);
   }
-#if defined(HARDWARE_INTERNAL_MODULE)
+#if defined(HARDWARE_INTERNAL_MODULE) || defined (SOFTWARE_INTERNAL_MODULE)
   else if (moduleIdx == INTERNAL_MODULE) {
     lcdDrawText(x, y, "Internal", flags);
   }

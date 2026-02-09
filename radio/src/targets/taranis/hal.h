@@ -3247,6 +3247,7 @@
 #define LCD_W                           128
 #define LCD_H                           96
 #define LCD_DEPTH                       4
+#define LCD_REVERT
 #else
 #define LCD_W                           128
 #define LCD_H                           64

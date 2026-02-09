@@ -1,7 +1,7 @@
 
 class Display:
 
-    def __init__(self, w, h, phys_w, phys_h, depth, color, oled, bl_color):
+    def __init__(self, w, h, phys_w, phys_h, depth, color, oled, bl_color, revert):
         self.w = w
         self.h = h
         self.phys_w = phys_w
@@ -10,6 +10,7 @@ class Display:
         self.color = color
         self.oled = oled
         self.backlight_color = bl_color
+        self.revert = revert
 
 def parse_lcd(hw_defs):
 
@@ -20,6 +21,7 @@ def parse_lcd(hw_defs):
     fdepth = f'LCD_DEPTH'
     foled = f'OLED_SCREEN'
     fbl_color = f'HAS_BACKLIGHT_COLOR'
+    frevert = f'LCD_REVERT'
 
     w = hw_defs[fw]
     h = hw_defs[fh]
@@ -57,4 +59,9 @@ def parse_lcd(hw_defs):
     else:
       bl_color = 0
 
-    return Display(w, h, phys_w, phys_h, depth, color, oled, bl_color)
+    if frevert in hw_defs:
+      revert = 1
+    else:
+      revert = 0
+
+    return Display(w, h, phys_w, phys_h, depth, color, oled, bl_color, revert)

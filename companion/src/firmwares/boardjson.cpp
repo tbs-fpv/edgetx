@@ -229,6 +229,9 @@ const int BoardJson::getCapability(const Board::Capability capability) const
     case Board::LcdOLED:
       return m_display.oled;
 
+    case Board::LcdRevert:
+      return m_display.revert;
+
     case Board::LcdWidth:
       return m_display.w;
 
@@ -1229,6 +1232,7 @@ bool BoardJson::loadFile(Board::Type board, QString hwdefn, InputsTable * inputs
     display.color = o.value("color").toInt();
     display.oled = o.value("oled").toInt();
     display.backlight_color = o.value("backlight_color").toInt();
+    display.revert = o.value("revert").toInt();
   }
 
   if (obj.value("custom_switches").isObject()) {

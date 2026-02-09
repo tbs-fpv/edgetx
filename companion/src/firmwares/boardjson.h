@@ -109,6 +109,7 @@ class BoardJson
       int color                        = 0;
       int oled                         = 0;
       int backlight_color              = 0;
+      int revert                       = 0;
     };
 
     struct CustomSwitchesDefn {
